@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Services.Pooling;
 
 namespace Core
 {
@@ -7,6 +8,8 @@ namespace Core
     {
         private static Bootstrap _instance;
         public static GameStateMachine StateMachine { get; private set; }
+        
+        public static PoolService Pools { get; private set; }
 
         private void Awake()
         {
@@ -23,6 +26,8 @@ namespace Core
             StateMachine.OnStateChanged += HandleState;
 
             StateMachine.ChangeState(GameState.Menu);
+            
+            Pools = new PoolService();
         }
 
         private void HandleState(GameState state)
