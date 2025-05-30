@@ -1,3 +1,4 @@
+using Services.InputService;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Services.Pooling;
@@ -10,6 +11,7 @@ namespace Core
         public static GameStateMachine StateMachine { get; private set; }
         
         public static PoolService Pools { get; private set; }
+        public static IInputService Input { get; private set; }
         
         [SerializeField] private GameObject passengerPrefab;
 
@@ -35,6 +37,13 @@ namespace Core
             for (int i = 0; i < 30; i++)
                 cubePool.Spawn().transform.position = Random.insideUnitCircle * 3f;
 
+            Input = InputServiceFactory.Create();
+        }
+        
+        private void Update()
+        {
+            (Input as MouseInputService)?.Tick();
+            (Input as TouchInputService)?.Tick();
         }
 
         private void HandleState(GameState state)
@@ -46,6 +55,11 @@ namespace Core
                     break;
                 //TODO
             }
+        }
+        
+        private void OnDestroy()
+        {
+            Input?.Dispose();
         }
     }
 }
