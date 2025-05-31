@@ -6,7 +6,7 @@ namespace Services.InputService
     {
         public static IInputService Create()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE
+#if UNITY_EDITOR
             return new MouseInputService();
 #else
             return new TouchInputService();
