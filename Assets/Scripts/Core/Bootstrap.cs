@@ -32,10 +32,16 @@ public class Bootstrap : MonoBehaviour
             StateMachine.ChangeState(GameState.Menu);
             
             Pools = new PoolService();
-            
-            var cubePool = Pools.RegisterPool("passengerDummy", passengerPrefab.GetComponent<Transform>(), 20);
-            for (int i = 0; i < 30; i++)
-                cubePool.Spawn().transform.position = Random.insideUnitCircle * 3f;
+            // Register passenger pool, but don't spawn dummies here.
+            // Ensure passengerPrefab is assigned in the Inspector and has the Passenger component.
+            if (passengerPrefab != null)
+            {
+                Pools.RegisterPool("passenger", passengerPrefab.GetComponent<Transform>(), 50); // Increased pool size
+            }
+            else
+            {
+                Debug.LogError("Passenger Prefab not assigned in Bootstrap!");
+            }
             
             Timer = new TimerService();
             Timer.OnFinished += HandleTimerFinished;
@@ -65,10 +71,21 @@ public class Bootstrap : MonoBehaviour
                         Input.OnTap -= StartGameOnTap;
                     }
                     LevelData currentLevelData = Levels.GetCurrentLevelData();
-                    Timer.Start(currentLevelData.timerDuration);
+                    if (currentLevelData != null)
+                    {
+                        Timer.Start(currentLevelData.timerDuration);
+                        SpawnPassengersForLevel(currentLevelData);
+                    }
+                    else
+                    {
+                        Debug.LogError("Cannot start game: CurrentLevelData is null.");
+                        // Optionally, transition to an error state or back to menu
+                        StateMachine.ChangeState(GameState.Menu); 
+                    }
                     break;
                 case GameState.Fail:
                 case GameState.Complete:
+                    DespawnAllPassengers();
                     if (Input != null)
                     {
                         Input.OnTap -= StartGameOnTap;
@@ -80,6 +97,72 @@ public class Bootstrap : MonoBehaviour
                     StateMachine.ChangeState(GameState.Menu);
                     break;
             }
+        }
+
+        private System.Collections.Generic.List<Transform> _activePassengers = new System.Collections.Generic.List<Transform>();
+
+        private void SpawnPassengersForLevel(LevelData levelData)
+        {
+            DespawnAllPassengers();
+
+            if (passengerPrefab == null || Pools == null)
+            {
+                Debug.LogError("Passenger prefab or PoolService is not initialized.");
+                return;
+            }
+
+            var passengerPool = Pools.Get<Transform>("passenger"); // Corrected: Use Get<Transform>
+            if (passengerPool == null)
+            {
+                Debug.LogError("Passenger pool 'passenger' (Transform) not found. Make sure it's registered correctly.");
+                if (passengerPrefab != null)
+                {
+                    passengerPool = Pools.RegisterPool("passenger", passengerPrefab.GetComponent<Transform>(), 50);
+                }
+                
+                if(passengerPool == null) 
+                {
+                    Debug.LogError("Failed to get or re-register passenger pool. Aborting passenger spawn.");
+                    return;
+                }
+            }
+
+            foreach (var spawnData in levelData.passengerSpawns)
+            {
+                Transform passengerInstance = passengerPool.Spawn();
+                if (passengerInstance != null)
+                {
+                    passengerInstance.gameObject.SetActive(true);
+                    passengerInstance.position = spawnData.position;
+                    
+                    Passenger passengerComponent = passengerInstance.GetComponent<Passenger>();
+                    if (passengerComponent != null)
+                    {
+                        passengerComponent.Initialize(spawnData.color);
+                    }
+                    else
+                    {
+                        Debug.LogError("Spawned passenger does not have a Passenger component!");
+                    }
+                    _activePassengers.Add(passengerInstance);
+                }
+            }
+        }
+
+        private void DespawnAllPassengers()
+        {
+            var passengerPool = Pools?.Get<Transform>("passenger");
+            if (passengerPool != null)
+            {
+                foreach (var passengerInstance in _activePassengers)
+                {
+                    if(passengerInstance != null)
+                    {
+                        passengerPool.Despawn(passengerInstance);
+                    }
+                }
+            }
+            _activePassengers.Clear();
         }
 
         private void StartGameOnTap(Vector3 position)
