@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Services.Pooling
+public class PoolService
 {
-    public class PoolService
-    {
-        private readonly Dictionary<string, object> _pools = new();
+    private readonly Dictionary<string, object> _pools = new();
         private readonly Transform _root;
 
         public PoolService()
@@ -21,7 +19,5 @@ namespace Services.Pooling
             return pool;
         }
 
-        public ObjectPool<T> Get<T>(string id) where T : Component =>
-            _pools[id] as ObjectPool<T>;
-    }
+    public ObjectPool<T> Get<T>(string id) where T : Component => _pools[id] as ObjectPool<T>;
 }

@@ -1,11 +1,8 @@
-namespace Core
+public enum GameState
 {
-    public enum GameState
-    {
-        Init,
-        Menu,
-        Playing,
-        Complete,
-        Fail
-    }
+    Init,
+    Menu,
+    Playing,
+    Complete,
+    Fail
 }

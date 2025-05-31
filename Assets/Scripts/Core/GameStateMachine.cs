@@ -1,11 +1,9 @@
 using System;
 using UnityEngine;
 
-namespace Core
+public class GameStateMachine
 {
-    public class GameStateMachine
-    {
-        public GameState Current { get; private set; } = GameState.Init;
+    public GameState Current { get; private set; } = GameState.Init;
         
         public event Action<GameState> OnStateChanged;
 
@@ -15,7 +13,6 @@ namespace Core
             Current = newState;
             OnStateChanged?.Invoke(Current);
             
-            Debug.Log("Game state changed to: " + Current);
-        }
+        Debug.Log("Game state changed to: " + Current);
     }
 }

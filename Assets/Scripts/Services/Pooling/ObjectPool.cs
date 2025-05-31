@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Services.Pooling
+public class ObjectPool<T> where T : Component
 {
-    public class ObjectPool<T> where T : Component
-    {
-        private readonly T _prefab;
+    private readonly T _prefab;
         private readonly Transform _root;
         private readonly Stack<T> _cache = new();
 
@@ -33,15 +31,14 @@ namespace Services.Pooling
         {
             T obj = _cache.Count > 0 ? _cache.Pop() : Create();
             obj.gameObject.SetActive(true);
-            (obj as IPoolable)?.OnSpawn();
+            obj.SendMessage("OnSpawn", SendMessageOptions.DontRequireReceiver);
             return obj;
         }
 
         public void Despawn(T obj)
         {
-            (obj as IPoolable)?.OnDespawn();
+            obj.SendMessage("OnDespawn", SendMessageOptions.DontRequireReceiver);
             obj.gameObject.SetActive(false);
             _cache.Push(obj);
-        }
     }
 }

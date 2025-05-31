@@ -1,10 +1,8 @@
-using UnityEngine;
+using System;
 
-namespace Services.Timer
+public class TimerService : IDisposable
 {
-    public class TimerService : ITimerService
-    {
-        public event System.Action<float> OnTick;
+    public event System.Action<float> OnTick;
         public event System.Action OnFinished;
 
         public bool IsRunning { get; private set; }
@@ -41,5 +39,4 @@ namespace Services.Timer
             OnFinished = null;
             OnTick = null;
         }
-    }
 }

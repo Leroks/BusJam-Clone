@@ -1,21 +1,16 @@
-using Services.InputService;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Services.Pooling;
-using Services.Timer;
 
-namespace Core
+public class Bootstrap : MonoBehaviour
 {
-    public class Bootstrap : MonoBehaviour
-    {
-        private static Bootstrap _instance;
-        
-        public static GameStateMachine StateMachine { get; private set; }
-        public static PoolService Pools { get; private set; }
-        public static IInputService Input { get; private set; }
-        public static ITimerService Timer { get; private set; }
-        
-        [SerializeField] private GameObject passengerPrefab;
+    private static Bootstrap _instance;
+    
+    public static GameStateMachine StateMachine { get; private set; }
+    public static PoolService Pools { get; private set; }
+    public static InputService Input { get; private set; }
+    public static TimerService Timer { get; private set; }
+    
+    [SerializeField] private GameObject passengerPrefab;
 
         private void Awake()
         {
@@ -41,13 +36,12 @@ namespace Core
             
             Timer = new TimerService();
 
-            Input = InputServiceFactory.Create();
+            Input = new InputService();
         }
         
         private void Update()
         {
-            (Input as MouseInputService)?.Tick();
-            (Input as TouchInputService)?.Tick();
+            Input?.Tick();
             
             Timer.Tick(UnityEngine.Time.deltaTime);
         }
@@ -71,4 +65,3 @@ namespace Core
             Timer?.Dispose();
         }
     }
-}
