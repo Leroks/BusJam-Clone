@@ -9,7 +9,7 @@ public class Bootstrap : MonoBehaviour
     public static PoolService Pools { get; private set; }
     public static InputService Input { get; private set; }
     public static TimerService Timer { get; private set; }
-    public static int CurrentLevel { get; private set; } = 1;
+    public static LevelService Levels { get; private set; }
     
     [SerializeField] private GameObject passengerPrefab;
 
@@ -26,6 +26,7 @@ public class Bootstrap : MonoBehaviour
 
             Input = new InputService();
             StateMachine = new GameStateMachine();
+            Levels = new LevelService();
             StateMachine.OnStateChanged += HandleState;
 
             StateMachine.ChangeState(GameState.Menu);
@@ -63,7 +64,8 @@ public class Bootstrap : MonoBehaviour
                     {
                         Input.OnTap -= StartGameOnTap;
                     }
-                    Timer.Start(10f); // TODO: later level data
+                    LevelData currentLevelData = Levels.GetCurrentLevelData();
+                    Timer.Start(currentLevelData.timerDuration);
                     break;
                 case GameState.Fail:
                 case GameState.Complete:
@@ -73,7 +75,7 @@ public class Bootstrap : MonoBehaviour
                     }
                     if (state == GameState.Complete)
                     {
-                        CurrentLevel++;
+                        Levels.AdvanceToNextLevel();
                     }
                     StateMachine.ChangeState(GameState.Menu);
                     break;

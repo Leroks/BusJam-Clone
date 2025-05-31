@@ -33,17 +33,21 @@ public class GameHud : MonoBehaviour
 
         if (isPlaying)
         {
-            if (levelText != null)
+            if (levelText != null && Bootstrap.Levels != null)
             {
-                levelText.text = $"LEVEL {Bootstrap.CurrentLevel}";
+                levelText.text = $"LEVEL {Bootstrap.Levels.CurrentLevelNumber}";
             }
-            if (_timer != null && _timer.IsRunning)
+
+            LevelData currentLevelData = Bootstrap.Levels?.GetCurrentLevelData();
+            if (currentLevelData != null)
             {
-                _fullDuration = _timer.Remaining; 
+                _fullDuration = currentLevelData.timerDuration;
             }
-            else if (_timer != null)
+            else
             {
-                 _fullDuration = 10f;
+                // Fallback if level data or service is somehow not available
+                Debug.LogWarning("GameHud: Could not get level data for timer duration. Defaulting.");
+                _fullDuration = 10f; 
             }
         }
     }
