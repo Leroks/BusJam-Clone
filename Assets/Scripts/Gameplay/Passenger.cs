@@ -1,15 +1,25 @@
 using UnityEngine;
+using DG.Tweening; // Import DOTween
+using System; // For Action
 
 public class Passenger : MonoBehaviour
 {
     [SerializeField] private Renderer passengerRenderer;
+    [SerializeField] private Animator passengerAnimator; // Assign in Inspector
+    [SerializeField] private float moveDuration = 1f; // Duration of the walk
 
     public PassengerColor CurrentColor { get; private set; }
+    public bool IsMoving { get; private set; } = false;
+
+    private static readonly int IsRunningAnimHash = Animator.StringToHash("isRunning"); // Changed to isRunning
 
     public void Initialize(PassengerColor color)
     {
         CurrentColor = color;
         ApplyColor();
+        SetWalkingAnimation(false); // Start in idle
+        IsMoving = false;
+        transform.DOKill(); // Kill any previous tweens on reuse from pool
     }
 
     private void ApplyColor()
@@ -53,4 +63,48 @@ public class Passenger : MonoBehaviour
     }
 
     // TODO: Add other passenger behaviors here later (movement, interaction etc.)
+
+    public void MoveToPosition(Vector3 targetPosition, Action onComplete = null)
+    {
+        if (IsMoving) return; // Don't start a new move if already moving
+
+        IsMoving = true;
+        SetWalkingAnimation(true);
+
+        // Optional: Make passenger look at the target position (or direction of movement)
+        // Vector3 direction = (targetPosition - transform.position).normalized;
+        // if (direction != Vector3.zero)
+        // {
+        //    transform.DOLookAt(targetPosition, 0.1f, AxisConstraint.Y); // Adjust axis constraint as needed
+        // }
+
+        transform.DOMove(targetPosition, moveDuration)
+            .SetEase(Ease.Linear) // Or another ease you prefer
+            .OnComplete(() =>
+            {
+                SetWalkingAnimation(false);
+                IsMoving = false;
+                onComplete?.Invoke();
+            });
+    }
+
+    private void SetWalkingAnimation(bool isRunning) // Parameter name can remain isWalking or change to isRunning for clarity
+    {
+        if (passengerAnimator != null)
+        {
+            passengerAnimator.SetBool(IsRunningAnimHash, isRunning); // Use IsRunningAnimHash
+        }
+        else
+        {
+            // Debug.LogWarning("PassengerAnimator not assigned on " + gameObject.name);
+        }
+    }
+
+    private void OnDisable()
+    {
+        // Ensure DOTween tweens are killed when the object is disabled/pooled
+        // to prevent issues if it's re-enabled while a tween was "paused".
+        transform.DOKill();
+        IsMoving = false; // Reset state
+    }
 }

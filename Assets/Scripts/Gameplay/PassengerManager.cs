@@ -184,7 +184,7 @@ public class PassengerManager
     // Methods moved from GameManager.cs
     private void HandlePassengerTap(Passenger tappedPassenger)
     {
-        if (_stateMachine.Current != GameState.Playing || tappedPassenger == null || _busManager == null) return;
+        if (_stateMachine.Current != GameState.Playing || tappedPassenger == null || _busManager == null || tappedPassenger.IsMoving) return; // Don't interact if already moving
 
         // Check if passenger is from queue or general spawn
         int queueIndex = -1;
@@ -204,38 +204,69 @@ public class PassengerManager
 
         if (targetBus != null)
         {
-            if (targetBus.AddPassenger(tappedPassenger))
+            // Temporarily remove from active list to prevent re-tapping during move
+            // It will be fully handled (despawned) after movement.
+            bool wasInActiveList = _activePassengerTransforms.Contains(tappedPassenger.transform);
+            if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform);
+            
+            if (queueIndex != -1) _queueSlots[queueIndex] = null;
+
+
+            // Define a boarding point on the bus (e.g., its transform position or a specific child transform)
+            Vector3 boardingPoint = targetBus.transform.position; // Or targetBus.GetBoardingPoint();
+
+            tappedPassenger.MoveToPosition(boardingPoint, () =>
             {
-                Debug.Log($"Passenger {tappedPassenger.name} boarding bus {targetBus.name}");
-                if (queueIndex != -1)
+                if (targetBus.AddPassenger(tappedPassenger)) // Finalize boarding
                 {
-                    _queueSlots[queueIndex] = null; 
+                    Debug.Log($"Passenger {tappedPassenger.name} completed move and boarded bus {targetBus.name}");
+                    DespawnSinglePassenger(tappedPassenger); // Now despawn after movement and successful boarding
                 }
-                // DespawnSinglePassenger will remove from _activePassengerTransforms if present
-                DespawnSinglePassenger(tappedPassenger); 
-            }
+                else
+                {
+                    // Failed to board after move (e.g., bus became full during transit)
+                    // Handle this case: maybe move to queue or just stay put and re-add to active list
+                    Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {targetBus.name} after move. Bus might be full.");
+                    if(wasInActiveList && !IsPassengerActive(tappedPassenger)) _activePassengerTransforms.Add(tappedPassenger.transform); // Re-add if not handled
+                    if (queueIndex != -1 && _queueSlots[queueIndex] == null) _queueSlots[queueIndex] = tappedPassenger; // Put back in queue if from queue
+                }
+            });
         }
-        else
+        else // No bus available, try to move to queue
         {
             if (queueIndex != -1)
             {
+                // Passenger was already in queue and tapped, but no bus. Stays in queue.
                 Debug.Log($"Tapped passenger {tappedPassenger.name} from queue, but no bus available. Stays in queue.");
                 return; 
             }
 
-            if (_queueSlotTransforms == null || _queueSlots == null) return; // Guard against null queue infrastructure
-
-            int emptyQueueSlot = FindEmptyQueueSlot();
-            if (emptyQueueSlot != -1)
+            if (_queueSlotTransforms == null || _queueSlots == null || _queueSlotTransforms.Length == 0)
             {
-                Debug.Log($"Passenger {tappedPassenger.name} moving to queue slot {emptyQueueSlot}");
-                _queueSlots[emptyQueueSlot] = tappedPassenger;
-                tappedPassenger.transform.position = _queueSlotTransforms[emptyQueueSlot].position;
-                RemoveFromActiveList(tappedPassenger); 
+                 Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and no queue slots available/defined.");
+                return; // No queue infrastructure
+            }
+
+            int emptyQueueSlotIndex = FindEmptyQueueSlot();
+            if (emptyQueueSlotIndex != -1)
+            {
+                // Temporarily remove from active list
+                bool wasInActiveList = _activePassengerTransforms.Contains(tappedPassenger.transform);
+                if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform);
+
+                _queueSlots[emptyQueueSlotIndex] = tappedPassenger; // Reserve slot
+
+                tappedPassenger.MoveToPosition(_queueSlotTransforms[emptyQueueSlotIndex].position, () =>
+                {
+                    Debug.Log($"Passenger {tappedPassenger.name} moved to queue slot {emptyQueueSlotIndex}");
+                    // Passenger is now in the queue slot, already marked in _queueSlots.
+                    // No need to call RemoveFromActiveList again as it was done before move.
+                });
             }
             else
             {
                 Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and queue is full.");
+                // Passenger remains in its current position, still active if it was.
             }
         }
     }

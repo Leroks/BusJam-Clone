@@ -128,6 +128,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   passengerRenderer: {fileID: 7152201023147559611}
+  passengerAnimator: {fileID: 3715267988257691202}
+  moveDuration: 1
 --- !u!4 &1107777813492700919 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: fbf6a4208b8ac49c7bba60e54292bec4, type: 3}
