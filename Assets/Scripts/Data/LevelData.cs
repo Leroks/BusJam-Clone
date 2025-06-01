@@ -8,5 +8,6 @@ public class LevelData : ScriptableObject
     public float timerDuration = 30f;
     
     public List<PassengerSpawnData> passengerSpawns = new List<PassengerSpawnData>();
-    //TODO: Add bus configurations, queue area layouts, other obstacles, goals, etc.
+    public List<BusData> busConfigurations = new List<BusData>();
+    //TODO: Add queue area layouts, other obstacles, goals, etc.
 }

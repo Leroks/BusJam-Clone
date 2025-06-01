@@ -12,6 +12,7 @@ public class Bootstrap : MonoBehaviour
     public static LevelService Levels { get; private set; }
     
     [SerializeField] private GameObject passengerPrefab;
+    [SerializeField] private GameObject busPrefab;
 
         private void Awake()
         {
@@ -32,16 +33,8 @@ public class Bootstrap : MonoBehaviour
             StateMachine.ChangeState(GameState.Menu);
             
             Pools = new PoolService();
-            // Register passenger pool, but don't spawn dummies here.
-            // Ensure passengerPrefab is assigned in the Inspector and has the Passenger component.
-            if (passengerPrefab != null)
-            {
-                Pools.RegisterPool("passenger", passengerPrefab.GetComponent<Transform>(), 50); // Increased pool size
-            }
-            else
-            {
-                Debug.LogError("Passenger Prefab not assigned in Bootstrap!");
-            }
+            Pools.RegisterPool("passenger", passengerPrefab.GetComponent<Transform>(), 50);
+            Pools.RegisterPool("bus", busPrefab.GetComponent<Transform>(), 10);
             
             Timer = new TimerService();
             Timer.OnFinished += HandleTimerFinished;
@@ -75,6 +68,7 @@ public class Bootstrap : MonoBehaviour
                     {
                         Timer.Start(currentLevelData.timerDuration);
                         SpawnPassengersForLevel(currentLevelData);
+                        SpawnBusesForLevel(currentLevelData);
                     }
                     else
                     {
@@ -86,6 +80,7 @@ public class Bootstrap : MonoBehaviour
                 case GameState.Fail:
                 case GameState.Complete:
                     DespawnAllPassengers();
+                    DespawnAllBuses();
                     if (Input != null)
                     {
                         Input.OnTap -= StartGameOnTap;
@@ -105,27 +100,7 @@ public class Bootstrap : MonoBehaviour
         {
             DespawnAllPassengers();
 
-            if (passengerPrefab == null || Pools == null)
-            {
-                Debug.LogError("Passenger prefab or PoolService is not initialized.");
-                return;
-            }
-
-            var passengerPool = Pools.Get<Transform>("passenger"); // Corrected: Use Get<Transform>
-            if (passengerPool == null)
-            {
-                Debug.LogError("Passenger pool 'passenger' (Transform) not found. Make sure it's registered correctly.");
-                if (passengerPrefab != null)
-                {
-                    passengerPool = Pools.RegisterPool("passenger", passengerPrefab.GetComponent<Transform>(), 50);
-                }
-                
-                if(passengerPool == null) 
-                {
-                    Debug.LogError("Failed to get or re-register passenger pool. Aborting passenger spawn.");
-                    return;
-                }
-            }
+            var passengerPool = Pools.Get<Transform>("passenger");
 
             foreach (var spawnData in levelData.passengerSpawns)
             {
@@ -136,14 +111,7 @@ public class Bootstrap : MonoBehaviour
                     passengerInstance.position = spawnData.position;
                     
                     Passenger passengerComponent = passengerInstance.GetComponent<Passenger>();
-                    if (passengerComponent != null)
-                    {
-                        passengerComponent.Initialize(spawnData.color);
-                    }
-                    else
-                    {
-                        Debug.LogError("Spawned passenger does not have a Passenger component!");
-                    }
+                    passengerComponent.Initialize(spawnData.color);
                     _activePassengers.Add(passengerInstance);
                 }
             }
@@ -163,6 +131,41 @@ public class Bootstrap : MonoBehaviour
                 }
             }
             _activePassengers.Clear();
+        }
+
+        private System.Collections.Generic.List<Transform> _activeBuses = new System.Collections.Generic.List<Transform>();
+
+        private void SpawnBusesForLevel(LevelData levelData)
+        {
+            DespawnAllBuses();
+
+            var busPool = Pools.Get<Transform>("bus");
+
+            foreach (var busData in levelData.busConfigurations)
+            {
+                Transform busInstance = busPool.Spawn();
+                    busInstance.gameObject.SetActive(true);
+                    
+                    Bus busComponent = busInstance.GetComponent<Bus>();
+                    busComponent.Initialize(busData);
+                    _activeBuses.Add(busInstance);
+            }
+        }
+
+        private void DespawnAllBuses()
+        {
+            var busPool = Pools?.Get<Transform>("bus");
+            if (busPool != null)
+            {
+                foreach (var busInstance in _activeBuses)
+                {
+                    if (busInstance != null)
+                    {
+                        busPool.Despawn(busInstance);
+                    }
+                }
+            }
+            _activeBuses.Clear();
         }
 
         private void StartGameOnTap(Vector3 position)
