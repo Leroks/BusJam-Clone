@@ -46,17 +46,17 @@ public sealed class InputService : IDisposable
                 Ray ray = Camera.main.ScreenPointToRay(inputPosition);
                 if (Physics.Raycast(ray, out RaycastHit hit, 100f))
                 {
-                    Passenger passenger = hit.collider.GetComponent<Passenger>();
-                if (passenger != null)
-                {
-                    OnPassengerTap?.Invoke(passenger);
-                    return;
-                }
-
-                Bus bus = hit.collider.GetComponent<Bus>();
-                if (bus != null)
-                {
-                    OnBusTap?.Invoke(bus);
+                    Passenger passenger = hit.collider.GetComponentInParent<Passenger>();
+                    if (passenger != null)
+                    {
+                        OnPassengerTap?.Invoke(passenger);
+                        return;
+                    }
+                    
+                    Bus bus = hit.collider.GetComponentInParent<Bus>();
+                    if (bus != null)
+                    {
+                        OnBusTap?.Invoke(bus);
                     return;
                 }
                 
