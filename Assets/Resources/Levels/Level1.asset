@@ -14,16 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 1
   timerDuration: 600
-  useStandardPassengerGrid: 1
-  standardGridPassengers: 000000000100000002000000
-  passengerSpawns:
-  - position: {x: 0, y: 0, z: 0}
-    color: 0
-  - position: {x: 0, y: 0, z: 0}
-    color: 0
-  - position: {x: 0, y: 0, z: 0}
-    color: 0
+  standardGridPassengers: 000000000000000000000000020000000200000002000000
   busConfigurations:
   - color: 0
+    capacity: 3
+    initialPosition: {x: 0, y: 0, z: 0}
+  - color: 2
     capacity: 3
     initialPosition: {x: 0, y: 0, z: 0}

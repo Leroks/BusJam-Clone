@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System; // For Action
-using System.Collections; // For Coroutines
+using System;
+using System.Collections;
+using DG.Tweening;
 
 public class Bus : MonoBehaviour
 {
@@ -30,6 +31,7 @@ public class Bus : MonoBehaviour
 
         ApplyBusColor();
         // UpdateVisuals(); // e.g., show empty seats
+        transform.DOMoveY(transform.position.y + 0.005f, 0.2f).SetEase(Ease.InOutQuad).SetLoops(-1, LoopType.Yoyo); 
     }
 
     private void ApplyBusColor()
