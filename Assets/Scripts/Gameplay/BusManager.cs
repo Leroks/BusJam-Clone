@@ -129,7 +129,7 @@ public class BusManager
     {
         Debug.Log($"BusManager: Bus {departedBus.name} completed departure.");
         _departedBusCount++;
-        // The bus deactivates itself. Bootstrap.DespawnAllBuses will handle pool return at level end.
+        // The bus deactivates itself. GameManager.DespawnAllBuses will handle pool return at level end.
         // Or, if BusManager should own the full lifecycle including pool return immediately:
         // _allSpawnedBusTransforms.Remove(departedBus.transform);
         // _poolService.Get<Transform>("bus").Despawn(departedBus.transform);

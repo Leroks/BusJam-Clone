@@ -115,20 +115,20 @@ public class Bus : MonoBehaviour
 
         Debug.Log($"Bus {gameObject.name} reached departure point. Invoking OnDepartureComplete and despawning.");
         
-        // Notify completion before despawning itself from the perspective of Bootstrap
+        // Notify completion before despawning itself from the perspective of GameManager
         OnDepartureComplete?.Invoke(this);
 
         // Despawn logic: Get the pool and despawn this bus instance's transform
-        // This assumes Bootstrap.Pools is accessible or Bus has a reference to its pool.
-        // For simplicity, let's assume Bootstrap will handle the actual despawn from its list
+        // This assumes GameManager.Pools is accessible or Bus has a reference to its pool.
+        // For simplicity, let's assume GameManager will handle the actual despawn from its list
         // and the pool after OnDepartureComplete. The bus just deactivates itself.
         // However, a cleaner way is for the bus to request despawn from the pool service if it knows its pool.
-        // For now, just deactivate. Bootstrap will handle the actual pool despawn via _allSpawnedBusTransforms.
+        // For now, just deactivate. GameManager will handle the actual pool despawn via _allSpawnedBusTransforms.
         gameObject.SetActive(false); 
-        // If Bootstrap is not managing the despawn from _allSpawnedBusTransforms based on this event,
+        // If GameManager is not managing the despawn from _allSpawnedBusTransforms based on this event,
         // then the bus should handle its own return to the pool here.
-        // Example: Bootstrap.Pools.Get<Transform>("bus").Despawn(transform);
-        // This creates a dependency on Bootstrap.Pools static access.
+        // Example: GameManager.Pools.Get<Transform>("bus").Despawn(transform);
+        // This creates a dependency on GameManager.Pools static access.
     }
 
     // Add other bus behaviors: movement, opening/closing doors, etc.

@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.Linq;
 
-public class Bootstrap : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
-    private static Bootstrap _instance;
+    private static GameManager _instance;
     
     public static GameStateMachine StateMachine { get; private set; }
     public static PoolService Pools { get; private set; }

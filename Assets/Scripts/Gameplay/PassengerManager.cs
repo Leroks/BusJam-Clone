@@ -165,7 +165,7 @@ public class PassengerManager
         ClearQueue(); // Ensure queue is also cleared
     }
 
-    // Methods moved from Bootstrap.cs
+    // Methods moved from GameManager.cs
     private void HandlePassengerTap(Passenger tappedPassenger)
     {
         if (_stateMachine.Current != GameState.Playing || tappedPassenger == null || _busManager == null) return;
@@ -233,7 +233,7 @@ public class PassengerManager
         return null;
     }
 
-    public void ClearQueue() // Made public to be callable from Bootstrap if needed during state changes
+    public void ClearQueue() // Made public to be callable from GameManager if needed during state changes
     {
         if (_queueSlots == null) return;
 

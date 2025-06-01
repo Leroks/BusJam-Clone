@@ -13,16 +13,16 @@ public class GameHud : MonoBehaviour
 
     private void Awake()
     {
-        _timer = Bootstrap.Timer;
+        _timer = GameManager.Timer;
         if (_timer != null)
         {
             _timer.OnTick += UpdateUI;
         }
 
-        if (Bootstrap.StateMachine != null)
+        if (GameManager.StateMachine != null)
         {
-            Bootstrap.StateMachine.OnStateChanged += HandleState;
-            HandleState(Bootstrap.StateMachine.Current);
+            GameManager.StateMachine.OnStateChanged += HandleState;
+            HandleState(GameManager.StateMachine.Current);
         }
     }
 
@@ -33,12 +33,12 @@ public class GameHud : MonoBehaviour
 
         if (isPlaying)
         {
-            if (levelText != null && Bootstrap.Levels != null)
+            if (levelText != null && GameManager.Levels != null)
             {
-                levelText.text = $"LEVEL {Bootstrap.Levels.CurrentLevelNumber}";
+                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelNumber}";
             }
 
-            LevelData currentLevelData = Bootstrap.Levels?.GetCurrentLevelData();
+            LevelData currentLevelData = GameManager.Levels?.GetCurrentLevelData();
             if (currentLevelData != null)
             {
                 _fullDuration = currentLevelData.timerDuration;
@@ -71,9 +71,9 @@ public class GameHud : MonoBehaviour
         {
             _timer.OnTick -= UpdateUI;
         }
-        if (Bootstrap.StateMachine != null)
+        if (GameManager.StateMachine != null)
         {
-            Bootstrap.StateMachine.OnStateChanged -= HandleState;
+            GameManager.StateMachine.OnStateChanged -= HandleState;
         }
     }
 }
