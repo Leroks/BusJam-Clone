@@ -14,3 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 1
   timerDuration: 30
+  passengerSpawns:
+  - position: {x: 0, y: 0, z: 0}
+    color: 0
+  - position: {x: 0, y: 0, z: 0}
+    color: 0
+  - position: {x: 0, y: 0, z: 0}
+    color: 0
+  busConfigurations:
+  - color: 0
+    capacity: 3
+    initialPosition: {x: 0, y: 0, z: 0}

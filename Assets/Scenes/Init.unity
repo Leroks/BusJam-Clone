@@ -153,6 +153,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   passengerPrefab: {fileID: 1309198620896432521, guid: 38fe75b25c0444d1a8196db9068b3892, type: 3}
+  busPrefab: {fileID: 1309198620896432521, guid: f0c2c094c3fd341618a8f086e5a6c990, type: 3}
 --- !u!4 &107608234
 Transform:
   m_ObjectHideFlags: 0
