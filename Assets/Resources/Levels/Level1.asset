@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Level1
   m_EditorClassIdentifier: 
   levelId: 1
-  timerDuration: 30
+  timerDuration: 600
   useStandardPassengerGrid: 1
   standardGridPassengers: 000000000100000002000000
   passengerSpawns:

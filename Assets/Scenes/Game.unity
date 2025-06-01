@@ -1906,8 +1906,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82ef1cbc8570a42c09e65934f566aada, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  passengerPrefab: {fileID: 1309198620896432521, guid: 38fe75b25c0444d1a8196db9068b3892, type: 3}
-  busPrefab: {fileID: 1309198620896432521, guid: f0c2c094c3fd341618a8f086e5a6c990, type: 3}
+  passengerPrefab: {fileID: 293946332538391629, guid: 7a16dab9e2a944c8d9b9adbb6ed29c5e, type: 3}
+  busPrefab: {fileID: 6352379339189082079, guid: 3bde93eca35de4abd9b2334b336ecedb, type: 3}
   queueSlotTransforms:
   - {fileID: 693655355}
   - {fileID: 1971303006}
