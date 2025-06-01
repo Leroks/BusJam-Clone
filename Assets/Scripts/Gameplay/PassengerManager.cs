@@ -77,6 +77,15 @@ public class PassengerManager
         {
             Debug.LogError("PassengerManager: InputService is null. Passenger taps will not be handled.");
         }
+
+        if (_busManager != null)
+        {
+            _busManager.OnBusAtStopReadyForBoarding += AttemptAutoBoardQueuedPassengers;
+        }
+        else
+        {
+            Debug.LogError("PassengerManager: BusManager is null. Cannot subscribe to OnBusAtStopReadyForBoarding.");
+        }
     }
 
     public void Dispose()
@@ -84,6 +93,52 @@ public class PassengerManager
         if (_inputService != null)
         {
             _inputService.OnPassengerTap -= HandlePassengerTap;
+        }
+        if (_busManager != null)
+        {
+            _busManager.OnBusAtStopReadyForBoarding -= AttemptAutoBoardQueuedPassengers;
+        }
+    }
+
+    private void AttemptAutoBoardQueuedPassengers(Bus busAtStop)
+    {
+        if (busAtStop == null || _queueSlots == null || _stateMachine.Current != GameState.Playing) return;
+
+        Debug.Log($"PassengerManager: Bus {busAtStop.name} arrived. Checking queue for auto-boarding.");
+
+        for (int i = 0; i < _queueSlots.Length; i++)
+        {
+            Passenger passengerInQueue = _queueSlots[i];
+            if (passengerInQueue != null && !passengerInQueue.IsMoving && busAtStop.CanBoard(passengerInQueue))
+            {
+                Debug.Log($"PassengerManager: Auto-boarding passenger {passengerInQueue.name} from queue slot {i} to bus {busAtStop.name}.");
+                
+                _queueSlots[i] = null;
+
+                Vector3 boardingPoint = busAtStop.transform.position;
+                passengerInQueue.MoveToPosition(boardingPoint, () =>
+                {
+                    if (busAtStop.AddPassenger(passengerInQueue))
+                    {
+                        DespawnSinglePassenger(passengerInQueue);
+                        Debug.Log($"PassengerManager: Auto-boarded passenger {passengerInQueue.name} successfully.");
+                    }
+                    else
+                    {
+                        // This case should be rare if CanBoard was true and bus didn't fill up instantly by another means.
+                        // If it happens, passenger is now "floating". Could try to re-queue or handle.
+                        Debug.LogWarning($"PassengerManager: Auto-boarding for {passengerInQueue.name} failed after move (bus full or wrong color).");
+                        // Attempt to put back in an empty queue slot if possible, or just leave it.
+                        // For simplicity, we don't re-queue here. It might get tapped later.
+                    }
+                });
+
+                if (busAtStop.IsFull)
+                {
+                    Debug.Log($"PassengerManager: Bus {busAtStop.name} became full during auto-boarding. Stopping further auto-boards for this bus.");
+                    break; 
+                }
+            }
         }
     }
 
@@ -197,7 +252,6 @@ public class PassengerManager
             }
         }
         
-        // _activePassengerTransforms should be empty now due to DespawnSinglePassenger calls
         // If any remain due to missing components, clear them.
         _activePassengerTransforms.Clear();
 
@@ -254,8 +308,9 @@ public class PassengerManager
         }
 
         Bus targetBus = FindBusForPassenger(tappedPassenger);
+        bool canBoardActiveBus = targetBus != null && _busManager != null && _busManager.IsActiveBusAtStop;
 
-        if (targetBus != null) // Attempt to move to bus
+        if (canBoardActiveBus)
         {
             bool wasInActiveList = _activePassengerTransforms.Contains(tappedPassenger.transform);
             if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform); // Temporarily remove
@@ -273,11 +328,7 @@ public class PassengerManager
                 else
                 {
                     Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {targetBus.name} after move.");
-                    // Re-add if not handled, put back in original spot if possible (complex, for now just re-add to active)
                     if(wasInActiveList && !IsPassengerActive(tappedPassenger)) _activePassengerTransforms.Add(tappedPassenger.transform);
-                    // If it was from queue or grid and failed, it's now "floating". Consider moving back or to queue.
-                    // For simplicity, if it was from grid and failed, it won't automatically go back to its grid spot here.
-                    // If it was from queue, it won't automatically go back to queue slot here.
                 }
             });
         }
@@ -308,7 +359,29 @@ public class PassengerManager
 
                 tappedPassenger.MoveToPosition(_queueSlotTransforms[emptyQueueSlotIndex].position, () =>
                 {
-                    Debug.Log($"Passenger {tappedPassenger.name} moved to queue slot {emptyQueueSlotIndex}");
+                    Debug.Log($"Passenger {tappedPassenger.name} arrived at queue slot {emptyQueueSlotIndex}.");
+
+                    // Check if a bus is now available and at the stop for immediate boarding
+                    Bus availableBus = FindBusForPassenger(tappedPassenger); // Re-check for a suitable bus
+                    if (availableBus != null && _busManager.IsActiveBusAtStop)
+                    {
+                        Debug.Log($"Passenger {tappedPassenger.name} at queue slot {emptyQueueSlotIndex} can immediately board bus {availableBus.name}.");
+                        _queueSlots[emptyQueueSlotIndex] = null; // Vacate the queue slot
+
+                        Vector3 boardingPoint = availableBus.transform.position;
+                        tappedPassenger.MoveToPosition(boardingPoint, () =>
+                        {
+                            if (availableBus.AddPassenger(tappedPassenger))
+                            {
+                                DespawnSinglePassenger(tappedPassenger);
+                                Debug.Log($"Passenger {tappedPassenger.name} successfully boarded bus {availableBus.name} from queue after immediate check.");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {availableBus.name} from queue after immediate check (bus full/color mismatch).");
+                            }
+                        });
+                    }
                 });
             }
             else
