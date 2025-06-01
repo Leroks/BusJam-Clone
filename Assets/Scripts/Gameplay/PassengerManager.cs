@@ -8,6 +8,7 @@ public class PassengerManager
     private PoolService _poolService;
     private GameObject _passengerPrefab;
     private Transform[] _queueSlotTransforms;
+    private Transform[] _passengerGridCellTransforms; // To be assigned in constructor
     private Passenger[] _queueSlots;
     private BusManager _busManager;
     private InputService _inputService;
@@ -18,11 +19,12 @@ public class PassengerManager
     public bool IsQueueEmpty => _queueSlots == null || _queueSlots.All(p => p == null);
 
 
-    public PassengerManager(PoolService poolService, GameObject passengerPrefab, Transform[] queueSlotTransforms, BusManager busManager, InputService inputService, GameStateMachine stateMachine)
+    public PassengerManager(PoolService poolService, GameObject passengerPrefab, Transform[] queueSlotTransforms, Transform[] passengerGridCellTransforms, BusManager busManager, InputService inputService, GameStateMachine stateMachine)
     {
         _poolService = poolService;
         _passengerPrefab = passengerPrefab;
         _queueSlotTransforms = queueSlotTransforms;
+        _passengerGridCellTransforms = passengerGridCellTransforms;
         _busManager = busManager;
         _inputService = inputService;
         _stateMachine = stateMachine;
@@ -82,6 +84,42 @@ public class PassengerManager
             return;
         }
 
+        // Standard Grid generation using scene transforms
+        if (levelData.useStandardPassengerGrid && levelData.standardGridPassengers.Count > 0 && _passengerGridCellTransforms != null && _passengerGridCellTransforms.Length > 0)
+        {
+            int passengersToSpawnOnGrid = Mathf.Min(levelData.standardGridPassengers.Count, _passengerGridCellTransforms.Length);
+            
+            for (int i = 0; i < passengersToSpawnOnGrid; i++)
+            {
+                if (_passengerGridCellTransforms[i] == null)
+                {
+                    Debug.LogWarning($"PassengerManager: PassengerGridCellTransforms element {i} is null. Skipping.");
+                    continue;
+                }
+
+                Transform passengerInstance = passengerPool.Spawn();
+                if (passengerInstance != null)
+                {
+                    passengerInstance.gameObject.SetActive(true);
+                    passengerInstance.position = _passengerGridCellTransforms[i].position;
+                    passengerInstance.rotation = _passengerGridCellTransforms[i].rotation; // Optional: match rotation
+                    
+                    Passenger passengerComponent = passengerInstance.GetComponent<Passenger>();
+                    if (passengerComponent != null)
+                    {
+                        passengerComponent.Initialize(levelData.standardGridPassengers[i]);
+                        _activePassengerTransforms.Add(passengerInstance);
+                    }
+                    else
+                    {
+                        Debug.LogError("Spawned passenger prefab for standard grid is missing Passenger component.");
+                        passengerPool.Despawn(passengerInstance); // Return to pool
+                    }
+                }
+            }
+        }
+
+        // Additional Manual spawns (can be used in addition to or instead of grid, these use their own defined positions)
         foreach (var spawnData in levelData.passengerSpawns)
         {
             Transform passengerInstance = passengerPool.Spawn();

@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 1
   timerDuration: 30
+  useStandardPassengerGrid: 1
+  standardGridPassengers: 000000000100000002000000
   passengerSpawns:
   - position: {x: 0, y: 0, z: 0}
     color: 0
