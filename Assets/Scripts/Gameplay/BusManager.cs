@@ -70,9 +70,18 @@ public class BusManager
                 Bus busComponent = busInstanceTransform.GetComponent<Bus>();
                 if (busComponent != null)
                 {
-                    busComponent.Initialize(busData);
+                    // Pass the actual bus stop position from BusManager's _busStopTransform
+                    if (_busStopTransform == null)
+                    {
+                        Debug.LogError("BusManager: _busStopTransform is null. Cannot initialize bus with correct stop position.");
+                        // Handle error, maybe don't spawn this bus or use a default
+                        busPool.Despawn(busInstanceTransform);
+                        continue; 
+                    }
+                    busComponent.Initialize(busData, _busStopTransform.position); 
                     busComponent.OnBusReadyToDepart += HandleBusDepartureRequest;
                     busComponent.OnDepartureComplete += HandleBusDepartureComplete;
+                    busComponent.OnBusArrivedAtStop += HandleBusArrivedAtStop; // Subscribe to new event
                     _waitingBusesQueue.Enqueue(busComponent);
                     _allSpawnedBusTransforms.Add(busInstanceTransform);
                     busInstanceTransform.gameObject.SetActive(false); // Initially inactive
@@ -93,16 +102,12 @@ public class BusManager
         {
             _activeBusComponent = _waitingBusesQueue.Dequeue();
             _activeBusComponent.gameObject.SetActive(true);
-            if (_busStopTransform != null)
-            {
-                _activeBusComponent.transform.position = _busStopTransform.position;
-                _activeBusComponent.transform.rotation = _busStopTransform.rotation;
-            }
-            else
-            {
-                Debug.LogError("BusManager: BusStopTransform not assigned!");
-            }
-            Debug.Log($"BusManager: Activated new bus: {_activeBusComponent.name}");
+            // The bus now handles its own arrival movement.
+            // No longer setting position directly to bus stop here.
+            // _activeBusComponent.transform.position = _busStopTransform.position; 
+            // _activeBusComponent.transform.rotation = _busStopTransform.rotation;
+            _activeBusComponent.StartArrivalSequence(); // Tell the bus to start moving to the stop
+            Debug.Log($"BusManager: Activated new bus: {_activeBusComponent.name}, starting arrival sequence.");
         }
         else
         {
@@ -136,6 +141,15 @@ public class BusManager
         ActivateNextBus();
     }
 
+    private void HandleBusArrivedAtStop(Bus bus)
+    {
+        if (bus == _activeBusComponent)
+        {
+            Debug.Log($"BusManager: Bus {bus.name} has arrived at the stop.");
+            // Potentially enable passenger interactions here if they were disabled during bus movement.
+        }
+    }
+
     public void DespawnAllBuses()
     {
         var busPool = _poolService?.Get<Transform>("bus");
@@ -150,6 +164,7 @@ public class BusManager
                     {
                         busComp.OnBusReadyToDepart -= HandleBusDepartureRequest;
                         busComp.OnDepartureComplete -= HandleBusDepartureComplete;
+                        busComp.OnBusArrivedAtStop -= HandleBusArrivedAtStop; // Unsubscribe from new event
                     }
                     busPool.Despawn(busTransform);
                 }
@@ -161,6 +176,7 @@ public class BusManager
         {
              _activeBusComponent.OnBusReadyToDepart -= HandleBusDepartureRequest;
              _activeBusComponent.OnDepartureComplete -= HandleBusDepartureComplete;
+             _activeBusComponent.OnBusArrivedAtStop -= HandleBusArrivedAtStop; // Unsubscribe from new event for active bus
         }
         _activeBusComponent = null;
         _departedBusCount = 0;

@@ -7,10 +7,12 @@ using DG.Tweening;
 public class Bus : MonoBehaviour
 {
     [SerializeField] private Renderer busRenderer;
-    [SerializeField] private float departureSpeed = 5f;
-    [SerializeField] private float departureDistance = 20f; // How far it moves before despawning
+    [SerializeField] private float moveSpeed = 5f; // Speed for both arrival and departure
+    [SerializeField] private float arrivalOffset = 10f; // How far left it starts from the stop
+    [SerializeField] private float departureOffset = 10f; // How far it moves right before despawning
 
     public event Action<Bus> OnBusReadyToDepart;
+    public event Action<Bus> OnBusArrivedAtStop;
     public event Action<Bus> OnDepartureComplete;
 
     public PassengerColor BusColor { get; private set; }
@@ -18,22 +20,67 @@ public class Bus : MonoBehaviour
     public int CurrentPassengerCount { get; private set; }
 
     private List<Passenger> _passengersOnBoard;
+    private Vector3 _busStopPosition;
 
     public bool IsFull => CurrentPassengerCount >= Capacity;
 
-    public void Initialize(BusData data)
+    public void Initialize(BusData data, Vector3 actualStopPosition)
     {
         BusColor = data.color;
         Capacity = data.capacity;
-        transform.position = data.initialPosition;
+        _busStopPosition = actualStopPosition; // Use the actual stop position passed from BusManager
+
+        // Set initial position to the left, off-screen, relative to the actual stop position
+        transform.position = _busStopPosition - Vector3.right * arrivalOffset;
+
         CurrentPassengerCount = 0;
         _passengersOnBoard = new List<Passenger>(Capacity);
 
         ApplyBusColor();
         // UpdateVisuals(); // e.g., show empty seats
-        transform.DOMoveY(transform.position.y + 0.005f, 0.2f).SetEase(Ease.InOutQuad).SetLoops(-1, LoopType.Yoyo); 
+        // Arrival routine will be started by BusManager now
     }
 
+    public void StartArrivalSequence()
+    {
+        if (gameObject.activeInHierarchy)
+        {
+            StartCoroutine(ArriveAtStopRoutine());
+        }
+        else
+        {
+            Debug.LogWarning($"Bus {gameObject.name} is not active. Cannot start arrival sequence. It will start when activated by BusManager.");
+        }
+    }
+
+    private IEnumerator ArriveAtStopRoutine()
+    {
+        Debug.Log($"Bus {gameObject.name} starting arrival routine to stop position: {_busStopPosition}. Current pos: {transform.position}");
+        Vector3 initialPosition = transform.position;
+        float journeyLength = Vector3.Distance(initialPosition, _busStopPosition);
+        float startTime = Time.time;
+
+        if (journeyLength > 0)
+        {
+            float distCovered = (Time.time - startTime) * moveSpeed;
+            float fractionOfJourney = distCovered / journeyLength;
+
+            while (fractionOfJourney < 1)
+            {
+                distCovered = (Time.time - startTime) * moveSpeed;
+                fractionOfJourney = distCovered / journeyLength;
+                transform.position = Vector3.Lerp(initialPosition, _busStopPosition, fractionOfJourney);
+                yield return null;
+            }
+        }
+        transform.position = _busStopPosition; // Ensure it reaches the exact target stop position
+        Debug.Log($"Bus {gameObject.name} arrived at stop.");
+        
+        // Start yoyo animation once at stop
+        transform.DOMoveY(transform.position.y + 0.005f, 0.2f).SetEase(Ease.InOutQuad).SetLoops(-1, LoopType.Yoyo);
+        OnBusArrivedAtStop?.Invoke(this);
+    }
+    
     private void ApplyBusColor()
     {
         busRenderer.material.color = GetUnityColor(BusColor);
@@ -94,19 +141,22 @@ public class Bus : MonoBehaviour
     private IEnumerator DepartRoutine()
     {
         Debug.Log($"Bus {gameObject.name} starting departure routine.");
-        Vector3 initialPosition = transform.position;
-        Vector3 targetPosition = initialPosition + Vector3.right * departureDistance;
+        // Stop yoyo animation before departure
+        DOTween.Kill(transform, true); // Kills tweens on this transform, 'true' to complete them immediately if they are mid-way.
+
+        Vector3 initialPosition = transform.position; // Should be _busStopPosition
+        Vector3 targetPosition = initialPosition + Vector3.right * departureOffset;
         float journeyLength = Vector3.Distance(initialPosition, targetPosition);
         float startTime = Time.time;
 
         if (journeyLength > 0) // Ensure there's a distance to travel
         {
-            float distCovered = (Time.time - startTime) * departureSpeed;
+            float distCovered = (Time.time - startTime) * moveSpeed;
             float fractionOfJourney = distCovered / journeyLength;
 
             while (fractionOfJourney < 1)
             {
-                distCovered = (Time.time - startTime) * departureSpeed;
+                distCovered = (Time.time - startTime) * moveSpeed;
                 fractionOfJourney = distCovered / journeyLength;
                 transform.position = Vector3.Lerp(initialPosition, targetPosition, fractionOfJourney);
                 yield return null;
