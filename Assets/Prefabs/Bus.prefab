@@ -63,7 +63,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: b624056fda228476ca3834f2b35ca21b, type: 2}
+      objectReference: {fileID: 2100000, guid: 67e908dac7812442ab2b53d0223031e4, type: 2}
     - target: {fileID: 919132149155446097, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Name
       value: BusSeat (2)
@@ -141,7 +141,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: b624056fda228476ca3834f2b35ca21b, type: 2}
+      objectReference: {fileID: 2100000, guid: 67e908dac7812442ab2b53d0223031e4, type: 2}
     - target: {fileID: 919132149155446097, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Name
       value: BusSeat
@@ -219,7 +219,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 54e4ff69c2de640e5b37ca1356aea709, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: b04bdac3f15ef4eaf8b8153ab654350a, type: 2}
+      objectReference: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: -7511558181221131132, guid: 54e4ff69c2de640e5b37ca1356aea709, type: 3}
       propertyPath: m_Materials.Array.data[2]
       value: 
@@ -227,7 +227,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 54e4ff69c2de640e5b37ca1356aea709, type: 3}
       propertyPath: m_Materials.Array.data[3]
       value: 
-      objectReference: {fileID: -2604325502559223537, guid: fbf6a4208b8ac49c7bba60e54292bec4, type: 3}
+      objectReference: {fileID: -2488453985880626411, guid: 54e4ff69c2de640e5b37ca1356aea709, type: 3}
     - target: {fileID: 919132149155446097, guid: 54e4ff69c2de640e5b37ca1356aea709, type: 3}
       propertyPath: m_Name
       value: Bus
@@ -375,7 +375,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: b624056fda228476ca3834f2b35ca21b, type: 2}
+      objectReference: {fileID: 2100000, guid: 67e908dac7812442ab2b53d0223031e4, type: 2}
     - target: {fileID: 919132149155446097, guid: 15f306225058341068f2815361decef3, type: 3}
       propertyPath: m_Name
       value: BusSeat (1)
