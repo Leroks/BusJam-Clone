@@ -39,6 +39,10 @@ public class ObjectPool<T> where T : Component
         {
             obj.SendMessage("OnDespawn", SendMessageOptions.DontRequireReceiver);
             obj.gameObject.SetActive(false);
+            if (obj.transform.parent != _root)
+            {
+                obj.transform.SetParent(_root);
+            }
             _cache.Push(obj);
     }
 }

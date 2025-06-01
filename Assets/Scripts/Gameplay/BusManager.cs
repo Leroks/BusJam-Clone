@@ -29,11 +29,14 @@ public class BusManager
         _busPrefab = busPrefab;
         _busStopTransform = busStopTransform;
 
-        if (_poolService.Get<Transform>("bus") == null && _busPrefab != null)
+        if (_busPrefab != null)
         {
-            _poolService.RegisterPool("bus", _busPrefab.GetComponent<Transform>(), 10);
+            // Register the pool. PoolService should ideally handle cases where a pool with the same key is registered multiple times,
+            // or this registration should only happen if the pool isn't already registered by another system.
+            // For now, we ensure it's registered here, under a "Buses" parent.
+            _poolService.RegisterPool("bus", _busPrefab.GetComponent<Transform>(), 10, "Buses");
         }
-        else if (_busPrefab == null)
+        else
         {
             Debug.LogError("BusManager: Bus prefab is null. Cannot register pool.");
         }
