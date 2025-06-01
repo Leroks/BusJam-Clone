@@ -38,5 +38,19 @@ public class Passenger : MonoBehaviour
         }
     }
 
+    public void Select()
+    {
+        // TODO: Implement visual feedback for selection (e.g., highlight, scale up)
+        Debug.Log(gameObject.name + " selected.");
+        // Example: transform.localScale = Vector3.one * 1.2f;
+    }
+
+    public void Deselect()
+    {
+        // TODO: Implement visual feedback for deselection (e.g., revert highlight, scale down)
+        Debug.Log(gameObject.name + " deselected.");
+        // Example: transform.localScale = Vector3.one;
+    }
+
     // TODO: Add other passenger behaviors here later (movement, interaction etc.)
 }
