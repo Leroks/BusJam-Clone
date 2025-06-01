@@ -4,11 +4,14 @@ using System.Linq; // Added for All()
 
 public class PassengerManager
 {
+    private const int GRID_COLUMNS = 3;
     private List<Transform> _activePassengerTransforms = new List<Transform>();
     private PoolService _poolService;
     private GameObject _passengerPrefab;
     private Transform[] _queueSlotTransforms;
-    private Transform[] _passengerGridCellTransforms; // To be assigned in constructor
+    private Transform[] _passengerGridCellTransforms;
+    private Passenger[] _gridCellOccupants;
+    private int _gridRows;
     private Passenger[] _queueSlots;
     private BusManager _busManager;
     private InputService _inputService;
@@ -25,6 +28,23 @@ public class PassengerManager
         _passengerPrefab = passengerPrefab;
         _queueSlotTransforms = queueSlotTransforms;
         _passengerGridCellTransforms = passengerGridCellTransforms;
+
+        if (_passengerGridCellTransforms != null && _passengerGridCellTransforms.Length > 0)
+        {
+            if (_passengerGridCellTransforms.Length % GRID_COLUMNS != 0)
+            {
+                Debug.LogWarning("PassengerManager: passengerGridCellTransforms count is not a multiple of GRID_COLUMNS. Grid layout might be incorrect.");
+            }
+            _gridRows = Mathf.CeilToInt((float)_passengerGridCellTransforms.Length / GRID_COLUMNS);
+            _gridCellOccupants = new Passenger[_passengerGridCellTransforms.Length];
+        }
+        else
+        {
+            _gridRows = 0;
+            _gridCellOccupants = new Passenger[0];
+            Debug.LogWarning("PassengerManager: passengerGridCellTransforms is null or empty. Grid functionality will be impaired.");
+        }
+
         _busManager = busManager;
         _inputService = inputService;
         _stateMachine = stateMachine;
@@ -69,24 +89,17 @@ public class PassengerManager
 
     public void SpawnPassengersForLevel(LevelData levelData)
     {
-        DespawnAllPassengers(); // Clear previous level's passengers
-
-        if (_passengerPrefab == null)
-        {
-            Debug.LogError("PassengerManager: Passenger prefab is not set. Cannot spawn passengers.");
-            return;
-        }
+        DespawnAllPassengers();
         
         var passengerPool = _poolService.Get<Transform>("passenger");
-        if (passengerPool == null)
+        
+        if (levelData.standardGridPassengers.Count > 0 && _passengerGridCellTransforms != null && _passengerGridCellTransforms.Length > 0 && _gridCellOccupants != null)
         {
-            Debug.LogError("PassengerManager: Passenger pool not found or not registered.");
-            return;
-        }
+            for(int i = 0; i < _gridCellOccupants.Length; i++)
+            {
+                _gridCellOccupants[i] = null;
+            }
 
-        // Always attempt grid generation if data is present
-        if (levelData.standardGridPassengers.Count > 0 && _passengerGridCellTransforms != null && _passengerGridCellTransforms.Length > 0)
-        {
             int passengersToSpawnOnGrid = Mathf.Min(levelData.standardGridPassengers.Count, _passengerGridCellTransforms.Length);
             
             for (int i = 0; i < passengersToSpawnOnGrid; i++)
@@ -102,28 +115,43 @@ public class PassengerManager
                 {
                     passengerInstance.gameObject.SetActive(true);
                     passengerInstance.position = _passengerGridCellTransforms[i].position;
-                    passengerInstance.rotation = _passengerGridCellTransforms[i].rotation; // Optional: match rotation
+                    passengerInstance.rotation = _passengerGridCellTransforms[i].rotation;
                     
                     Passenger passengerComponent = passengerInstance.GetComponent<Passenger>();
                     if (passengerComponent != null)
                     {
                         passengerComponent.Initialize(levelData.standardGridPassengers[i]);
                         _activePassengerTransforms.Add(passengerInstance);
+                        _gridCellOccupants[i] = passengerComponent;
                     }
                     else
                     {
                         Debug.LogError("Spawned passenger prefab for standard grid is missing Passenger component.");
-                        passengerPool.Despawn(passengerInstance); // Return to pool
+                        passengerPool.Despawn(passengerInstance);
                     }
                 }
             }
         }
-        // Manual spawn logic removed
     }
 
+    private void ClearPassengerFromGrid(Passenger passenger)
+    {
+        if (passenger == null || _gridCellOccupants == null) return;
+        for (int i = 0; i < _gridCellOccupants.Length; i++)
+        {
+            if (_gridCellOccupants[i] == passenger)
+            {
+                _gridCellOccupants[i] = null;
+                return;
+            }
+        }
+    }
+    
     public void DespawnSinglePassenger(Passenger passengerToDespawn)
     {
         if (passengerToDespawn == null) return;
+
+        ClearPassengerFromGrid(passengerToDespawn);
 
         Transform passengerTransform = passengerToDespawn.transform;
         if (_activePassengerTransforms.Contains(passengerTransform))
@@ -138,7 +166,7 @@ public class PassengerManager
         }
         else
         {
-            passengerToDespawn.gameObject.SetActive(false); // Fallback
+            passengerToDespawn.gameObject.SetActive(false);
         }
     }
     
@@ -157,36 +185,61 @@ public class PassengerManager
 
     public void DespawnAllPassengers()
     {
-        var passengerPool = _poolService?.Get<Transform>("passenger");
-        if (passengerPool != null)
+        List<Transform> passengersToDespawnTransforms = new List<Transform>(_activePassengerTransforms);
+
+        foreach (var passengerTransform in passengersToDespawnTransforms)
         {
-            // Iterate over a copy if modifying the list during iteration
-            List<Transform> toDespawn = new List<Transform>(_activePassengerTransforms);
-            foreach (var passengerTransform in toDespawn)
+            if (passengerTransform != null)
             {
-                if(passengerTransform != null)
+                Passenger passengerComponent = passengerTransform.GetComponent<Passenger>();
+                // This will handle removing from grid, active list, and returning to pool
+                DespawnSinglePassenger(passengerComponent);
+            }
+        }
+        
+        // _activePassengerTransforms should be empty now due to DespawnSinglePassenger calls
+        // If any remain due to missing components, clear them.
+        _activePassengerTransforms.Clear();
+
+        ClearQueue(); // Ensure queue is also cleared (calls DespawnSinglePassenger for queued items)
+
+        // Explicitly clear grid occupants as a final safety net, though DespawnSinglePassenger should handle it.
+        if (_gridCellOccupants != null)
+        {
+            for (int i = 0; i < _gridCellOccupants.Length; i++)
+            {
+                _gridCellOccupants[i] = null;
+            }
+        }
+    }
+    
+    private void HandlePassengerTap(Passenger tappedPassenger)
+    {
+        if (_stateMachine.Current != GameState.Playing || tappedPassenger == null || _busManager == null || tappedPassenger.IsMoving) return;
+
+        int gridCellIndex = -1;
+        if (_gridCellOccupants != null)
+        {
+            for (int i = 0; i < _gridCellOccupants.Length; i++)
+            {
+                if (_gridCellOccupants[i] == tappedPassenger)
                 {
-                    passengerPool.Despawn(passengerTransform);
+                    gridCellIndex = i;
+                    break;
                 }
             }
         }
-        else // Fallback if pool somehow not available
+
+        // If passenger is on the grid, check if path is clear
+        if (gridCellIndex != -1)
         {
-             foreach (var passengerTransform in _activePassengerTransforms)
-             {
-                 if(passengerTransform != null) passengerTransform.gameObject.SetActive(false);
-             }
+            if (!IsPathClearForGridPassenger(gridCellIndex))
+            {
+                Debug.Log($"Path blocked for passenger {tappedPassenger.name} at grid cell {gridCellIndex}.");
+                return; // Path is blocked, do not move
+            }
         }
-        _activePassengerTransforms.Clear();
-        ClearQueue(); // Ensure queue is also cleared
-    }
-
-    // Methods moved from GameManager.cs
-    private void HandlePassengerTap(Passenger tappedPassenger)
-    {
-        if (_stateMachine.Current != GameState.Playing || tappedPassenger == null || _busManager == null || tappedPassenger.IsMoving) return; // Don't interact if already moving
-
-        // Check if passenger is from queue or general spawn
+        
         int queueIndex = -1;
         if (_queueSlots != null)
         {
@@ -202,73 +255,92 @@ public class PassengerManager
 
         Bus targetBus = FindBusForPassenger(tappedPassenger);
 
-        if (targetBus != null)
+        if (targetBus != null) // Attempt to move to bus
         {
-            // Temporarily remove from active list to prevent re-tapping during move
-            // It will be fully handled (despawned) after movement.
             bool wasInActiveList = _activePassengerTransforms.Contains(tappedPassenger.transform);
-            if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform);
+            if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform); // Temporarily remove
             
             if (queueIndex != -1) _queueSlots[queueIndex] = null;
+            if (gridCellIndex != -1) _gridCellOccupants[gridCellIndex] = null; // Clear from grid
 
-
-            // Define a boarding point on the bus (e.g., its transform position or a specific child transform)
-            Vector3 boardingPoint = targetBus.transform.position; // Or targetBus.GetBoardingPoint();
-
+            Vector3 boardingPoint = targetBus.transform.position;
             tappedPassenger.MoveToPosition(boardingPoint, () =>
             {
-                if (targetBus.AddPassenger(tappedPassenger)) // Finalize boarding
+                if (targetBus.AddPassenger(tappedPassenger))
                 {
-                    Debug.Log($"Passenger {tappedPassenger.name} completed move and boarded bus {targetBus.name}");
-                    DespawnSinglePassenger(tappedPassenger); // Now despawn after movement and successful boarding
+                    DespawnSinglePassenger(tappedPassenger); // Despawns and handles grid/active list
                 }
                 else
                 {
-                    // Failed to board after move (e.g., bus became full during transit)
-                    // Handle this case: maybe move to queue or just stay put and re-add to active list
-                    Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {targetBus.name} after move. Bus might be full.");
-                    if(wasInActiveList && !IsPassengerActive(tappedPassenger)) _activePassengerTransforms.Add(tappedPassenger.transform); // Re-add if not handled
-                    if (queueIndex != -1 && _queueSlots[queueIndex] == null) _queueSlots[queueIndex] = tappedPassenger; // Put back in queue if from queue
+                    Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {targetBus.name} after move.");
+                    // Re-add if not handled, put back in original spot if possible (complex, for now just re-add to active)
+                    if(wasInActiveList && !IsPassengerActive(tappedPassenger)) _activePassengerTransforms.Add(tappedPassenger.transform);
+                    // If it was from queue or grid and failed, it's now "floating". Consider moving back or to queue.
+                    // For simplicity, if it was from grid and failed, it won't automatically go back to its grid spot here.
+                    // If it was from queue, it won't automatically go back to queue slot here.
                 }
             });
         }
-        else // No bus available, try to move to queue
+        else // No bus, try to move to queue (if not already in queue)
         {
-            if (queueIndex != -1)
+            if (queueIndex != -1) // Already in queue, no bus, so do nothing
             {
-                // Passenger was already in queue and tapped, but no bus. Stays in queue.
                 Debug.Log($"Tapped passenger {tappedPassenger.name} from queue, but no bus available. Stays in queue.");
-                return; 
+                return;
             }
 
+            // If passenger was on grid and no bus, try moving to queue
             if (_queueSlotTransforms == null || _queueSlots == null || _queueSlotTransforms.Length == 0)
             {
-                 Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and no queue slots available/defined.");
-                return; // No queue infrastructure
+                Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and no queue slots available/defined.");
+                return;
             }
 
             int emptyQueueSlotIndex = FindEmptyQueueSlot();
             if (emptyQueueSlotIndex != -1)
             {
-                // Temporarily remove from active list
                 bool wasInActiveList = _activePassengerTransforms.Contains(tappedPassenger.transform);
                 if(wasInActiveList) _activePassengerTransforms.Remove(tappedPassenger.transform);
+
+                if (gridCellIndex != -1) _gridCellOccupants[gridCellIndex] = null; // Clear from grid
 
                 _queueSlots[emptyQueueSlotIndex] = tappedPassenger; // Reserve slot
 
                 tappedPassenger.MoveToPosition(_queueSlotTransforms[emptyQueueSlotIndex].position, () =>
                 {
                     Debug.Log($"Passenger {tappedPassenger.name} moved to queue slot {emptyQueueSlotIndex}");
-                    // Passenger is now in the queue slot, already marked in _queueSlots.
-                    // No need to call RemoveFromActiveList again as it was done before move.
                 });
             }
             else
             {
                 Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and queue is full.");
-                // Passenger remains in its current position, still active if it was.
             }
         }
+    }
+
+    private bool IsPathClearForGridPassenger(int passengerCellIndex)
+    {
+        if (_gridCellOccupants == null || passengerCellIndex < 0 || passengerCellIndex >= _gridCellOccupants.Length || _gridRows == 0)
+        {
+            return true; // Should not happen or grid not set up
+        }
+
+        int col = passengerCellIndex % GRID_COLUMNS;
+        int row = passengerCellIndex / GRID_COLUMNS;
+
+        // Check all cells in front (same column, lower row index)
+        for (int r = 0; r < row; r++)
+        {
+            int frontCellIndex = r * GRID_COLUMNS + col;
+            if (frontCellIndex >= 0 && frontCellIndex < _gridCellOccupants.Length) // Bounds check
+            {
+                if (_gridCellOccupants[frontCellIndex] != null)
+                {
+                    return false; // Path is blocked
+                }
+            }
+        }
+        return true; // Path is clear
     }
 
     private Bus FindBusForPassenger(Passenger passenger)
@@ -280,7 +352,7 @@ public class PassengerManager
         return null;
     }
 
-    public void ClearQueue() // Made public to be callable from GameManager if needed during state changes
+    public void ClearQueue()
     {
         if (_queueSlots == null) return;
 
@@ -288,19 +360,9 @@ public class PassengerManager
         {
             if (_queueSlots[i] != null)
             {
-                var passengerPool = _poolService?.Get<Transform>("passenger");
-                if (passengerPool != null)
-                {
-                    // Check if this passenger is also in the active list, if so, DespawnSinglePassenger will handle it.
-                    // If it's only in the queue (moved from active list), then despawn it here.
-                    // To be safe, let DespawnSinglePassenger handle it, which also removes from active list if present.
-                    DespawnSinglePassenger(_queueSlots[i]);
-                }
-                else
-                {
-                     if(_queueSlots[i].gameObject != null) _queueSlots[i].gameObject.SetActive(false); // Fallback
-                }
-                _queueSlots[i] = null;
+                // DespawnSinglePassenger will handle removing from active lists and grid if necessary
+                DespawnSinglePassenger(_queueSlots[i]); 
+                _queueSlots[i] = null; // Ensure slot is marked empty
             }
         }
     }
