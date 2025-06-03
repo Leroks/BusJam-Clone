@@ -39,16 +39,7 @@ public class GameHud : MonoBehaviour
             }
 
             LevelData currentLevelData = GameManager.Levels?.GetCurrentLevelData();
-            if (currentLevelData != null)
-            {
-                _fullDuration = currentLevelData.timerDuration;
-            }
-            else
-            {
-                // Fallback if level data or service is somehow not available
-                Debug.LogWarning("GameHud: Could not get level data for timer duration. Defaulting.");
-                _fullDuration = 10f; 
-            }
+            _fullDuration = currentLevelData.timerDuration;
         }
     }
 
@@ -62,7 +53,7 @@ public class GameHud : MonoBehaviour
         {
             timerBar.fillAmount = 0;
         }
-        timerText.text = $"{remaining:0}s";
+        timerText.text = $"Remaining {remaining:0}s";
     }
 
     private void OnDestroy()

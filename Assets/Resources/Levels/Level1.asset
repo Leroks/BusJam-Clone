@@ -18,5 +18,5 @@ MonoBehaviour:
   gridHeight: 2
   standardGridPassengers: 000000000000000000000000040000000400000004000000
   busConfigurations:
-  - color: 1
+  - color: 0
   - color: 4
