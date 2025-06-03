@@ -3,8 +3,8 @@ using UnityEngine;
 
 public sealed class InputService : IDisposable
 {
-    public event Action<Vector3> OnTapWorld; // Renamed for clarity: provides world position
-    public event Action<Vector2> OnTapScreen; // New: provides screen position for UI or general taps
+    public event Action<Vector3> OnTapWorld;
+    public event Action<Vector2> OnTapScreen;
     public event Action<Passenger> OnPassengerTap;
     public event Action<Bus> OnBusTap;
     public event Action OnEmptySpaceTap;
@@ -19,24 +19,12 @@ public sealed class InputService : IDisposable
     {
         Vector2 inputPosition = Vector2.zero;
         bool inputDown = false;
-
-#if UNITY_EDITOR
-        if (UnityEngine.Input.GetMouseButtonDown(0))
+        
+        if (Input.GetMouseButtonDown(0))
         {
-            inputPosition = UnityEngine.Input.mousePosition;
+            inputPosition = Input.mousePosition;
             inputDown = true;
         }
-#else
-        if (UnityEngine.Input.touchCount > 0)
-        {
-            Touch t = UnityEngine.Input.GetTouch(0);
-            if (t.phase == TouchPhase.Began)
-            {
-                inputPosition = t.position;
-                inputDown = true;
-            }
-        }
-#endif
 
         if (inputDown)
         {
@@ -66,8 +54,8 @@ public sealed class InputService : IDisposable
             {
                 OnEmptySpaceTap?.Invoke();
             }
-        } // Closes if(inputDown)
-    } // Closes Tick()
+        }
+    }
 
     public void Dispose()
     {
