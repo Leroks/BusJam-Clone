@@ -10,15 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5790508edaab491a9051075f146386e, type: 3}
-  m_Name: Level_1
+  m_Name: Level_5
   m_EditorClassIdentifier: 
-  levelId: 1
-  timerDuration: 45
-  gridWidth: 3
-  gridHeight: 2
-  standardGridPassengers: 020000000200000002000000000000000000000000000000
+  levelId: 5
+  timerDuration: 60
+  gridWidth: 4
+  gridHeight: 3
+  standardGridPassengers: 010000000000000005000000000000000300000001000000030000000100000000000000050000000500000003000000
   busConfigurations:
-  - color: 2
-    capacity: 3
   - color: 0
+    capacity: 3
+  - color: 1
+    capacity: 3
+  - color: 3
+    capacity: 3
+  - color: 5
     capacity: 3
