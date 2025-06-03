@@ -4,13 +4,13 @@ using System;
 
 public class BusManager
 {
-    public event Action OnAllBusesDeparted; // For win condition check
-    public event Action<Bus> OnBusAtStopReadyForBoarding; // New event for PassengerManager
+    public event Action OnAllBusesDeparted;
+    public event Action<Bus> OnBusAtStopReadyForBoarding;
 
     private List<Transform> _allSpawnedBusTransforms = new List<Transform>();
     private Queue<Bus> _waitingBusesQueue = new Queue<Bus>();
     private Bus _activeBusComponent;
-    private bool _isActiveBusAtStop = false; // Tracks if the active bus is currently at the stop
+    private bool _isActiveBusAtStop = false;
     
     private PoolService _poolService;
     private GameObject _busPrefab;
@@ -20,7 +20,7 @@ public class BusManager
     private int _departedBusCount = 0;
 
     public Bus ActiveBus => _activeBusComponent;
-    public bool IsActiveBusAtStop => _isActiveBusAtStop; // Public accessor
+    public bool IsActiveBusAtStop => _isActiveBusAtStop;
     public int DepartedBusCount => _departedBusCount;
     public int InitialBusCountForLevel => _initialBusCountForLevel;
     public bool AreAllBusesGone => _activeBusComponent == null && _waitingBusesQueue.Count == 0;
@@ -34,9 +34,6 @@ public class BusManager
 
         if (_busPrefab != null)
         {
-            // Register the pool. PoolService should ideally handle cases where a pool with the same key is registered multiple times,
-            // or this registration should only happen if the pool isn't already registered by another system.
-            // For now, we ensure it's registered here, under a "Buses" parent.
             _poolService.RegisterPool("bus", _busPrefab.GetComponent<Transform>(), 10, "Buses");
         }
         else
@@ -47,7 +44,7 @@ public class BusManager
 
     public void SpawnBusesForLevel(LevelData levelData)
     {
-        DespawnAllBuses(); // Clear previous buses
+        DespawnAllBuses();
 
         if (_busPrefab == null)
         {
@@ -73,21 +70,13 @@ public class BusManager
                 Bus busComponent = busInstanceTransform.GetComponent<Bus>();
                 if (busComponent != null)
                 {
-                    // Pass the actual bus stop position from BusManager's _busStopTransform
-                    if (_busStopTransform == null)
-                    {
-                        Debug.LogError("BusManager: _busStopTransform is null. Cannot initialize bus with correct stop position.");
-                        // Handle error, maybe don't spawn this bus or use a default
-                        busPool.Despawn(busInstanceTransform);
-                        continue; 
-                    }
                     busComponent.Initialize(busData, _busStopTransform.position); 
                     busComponent.OnBusReadyToDepart += HandleBusDepartureRequest;
                     busComponent.OnDepartureComplete += HandleBusDepartureComplete;
-                    busComponent.OnBusArrivedAtStop += HandleBusArrivedAtStop; // Subscribe to new event
+                    busComponent.OnBusArrivedAtStop += HandleBusArrivedAtStop;
                     _waitingBusesQueue.Enqueue(busComponent);
                     _allSpawnedBusTransforms.Add(busInstanceTransform);
-                    busInstanceTransform.gameObject.SetActive(false); // Initially inactive
+                    busInstanceTransform.gameObject.SetActive(false);
                 }
                 else
                 {
@@ -101,7 +90,7 @@ public class BusManager
 
     private void ActivateNextBus()
     {
-        if (_activeBusComponent != null) // If there was a previous active bus, ensure its state is cleared
+        if (_activeBusComponent != null)
         {
             _isActiveBusAtStop = false; 
         }
@@ -109,7 +98,7 @@ public class BusManager
         if (_waitingBusesQueue.Count > 0)
         {
             _activeBusComponent = _waitingBusesQueue.Dequeue();
-            _isActiveBusAtStop = false; // New bus is not at stop yet
+            _isActiveBusAtStop = false;
             _activeBusComponent.gameObject.SetActive(true);
             _activeBusComponent.StartArrivalSequence(); 
             Debug.Log($"BusManager: Activated new bus: {_activeBusComponent.name}, starting arrival sequence.");
@@ -117,7 +106,7 @@ public class BusManager
         else
         {
             _activeBusComponent = null;
-            _isActiveBusAtStop = false; // No active bus, so not at stop
+            _isActiveBusAtStop = false;
             Debug.Log("BusManager: No more waiting buses.");
             if (_departedBusCount >= _initialBusCountForLevel && _initialBusCountForLevel > 0)
             {
@@ -131,9 +120,8 @@ public class BusManager
         if (departingBus == _activeBusComponent)
         {
             Debug.Log($"BusManager: Bus {departingBus.name} requesting departure.");
-            _isActiveBusAtStop = false; // Bus is no longer at the stop as it's departing
+            _isActiveBusAtStop = false;
             departingBus.StartDeparture();
-            // _activeBusComponent = null; // Keep active bus until departure complete, then ActivateNextBus handles it
         }
     }
 
@@ -149,9 +137,8 @@ public class BusManager
         if (bus == _activeBusComponent)
         {
             Debug.Log($"BusManager: Bus {bus.name} has arrived at the stop.");
-            _isActiveBusAtStop = true; // Bus is now at the stop
-            OnBusAtStopReadyForBoarding?.Invoke(bus); // Notify subscribers
-            // Potentially enable passenger interactions here if they were disabled during bus movement.
+            _isActiveBusAtStop = true;
+            OnBusAtStopReadyForBoarding?.Invoke(bus);
         }
     }
 
@@ -169,7 +156,7 @@ public class BusManager
                     {
                         busComp.OnBusReadyToDepart -= HandleBusDepartureRequest;
                         busComp.OnDepartureComplete -= HandleBusDepartureComplete;
-                        busComp.OnBusArrivedAtStop -= HandleBusArrivedAtStop; // Unsubscribe from new event
+                        busComp.OnBusArrivedAtStop -= HandleBusArrivedAtStop;
                     }
                     busPool.Despawn(busTransform);
                 }
@@ -184,7 +171,7 @@ public class BusManager
              _activeBusComponent.OnBusArrivedAtStop -= HandleBusArrivedAtStop;
         }
         _activeBusComponent = null;
-        _isActiveBusAtStop = false; // No active bus
+        _isActiveBusAtStop = false;
         _departedBusCount = 0;
         _initialBusCountForLevel = 0;
     }

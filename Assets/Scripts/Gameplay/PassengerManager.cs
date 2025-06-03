@@ -146,7 +146,7 @@ public class PassengerManager
                     Debug.LogWarning($"PassengerManager: DynamicGridCellTransform element {i} is null or out of bounds. Skipping.");
                     continue;
                 }
-                 if (i >= levelData.standardGridPassengers.Count) // Safety check for passenger data
+                if (i >= levelData.standardGridPassengers.Count) // Safety check for passenger data
                 {
                     Debug.LogWarning($"PassengerManager: Not enough passenger color data for grid cell {i}. Skipping.");
                     continue;
@@ -431,20 +431,18 @@ public class PassengerManager
         }
 
         int gridWidth = currentLevel.gridWidth;
-        // int gridHeight = currentLevel.gridHeight;
+        int gridHeight = currentLevel.gridHeight;
 
         int col = passengerCellIndex % gridWidth;
         int row = passengerCellIndex / gridWidth;
-
-        for (int r = 0; r < row; r++)
+        
+        for (int rToCheck = row + 1; rToCheck < gridHeight; rToCheck++)
         {
-            int frontCellIndex = r * gridWidth + col;
-            if (frontCellIndex < _gridCellOccupants.Length)
+            int cellInPathIndex = rToCheck * gridWidth + col;
+            if (cellInPathIndex < _gridCellOccupants.Length && _gridCellOccupants[cellInPathIndex] != null)
             {
-                if (_gridCellOccupants[frontCellIndex] != null)
-                {
-                    return false; // Path is blocked
-                }
+                Debug.Log($"Path for passenger at ({row},{col}) is blocked by passenger at ({rToCheck},{col}).");
+                return false; // Path is blocked
             }
         }
         return true; // Path is clear
