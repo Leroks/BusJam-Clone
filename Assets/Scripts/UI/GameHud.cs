@@ -7,6 +7,9 @@ public class GameHud : MonoBehaviour
     [SerializeField] private Image timerBar;
     [SerializeField] private TMP_Text timerText;
     [SerializeField] private TMP_Text levelText;
+    [SerializeField] private TMP_Text tapToStartText;
+    [SerializeField] private TMP_Text winText;
+    [SerializeField] private TMP_Text loseText;
 
     private TimerService _timer;
     private float _fullDuration;
@@ -28,19 +31,46 @@ public class GameHud : MonoBehaviour
 
     private void HandleState(GameState state)
     {
-        bool isPlaying = state == GameState.Playing;
-        gameObject.SetActive(isPlaying);
+        if (timerBar != null) timerBar.gameObject.SetActive(false);
+        if (timerText != null) timerText.gameObject.SetActive(false);
+        if (levelText != null) levelText.gameObject.SetActive(false);
+        if (tapToStartText != null) tapToStartText.gameObject.SetActive(false);
+        if (winText != null) winText.gameObject.SetActive(false);
+        if (loseText != null) loseText.gameObject.SetActive(false);
 
-        if (isPlaying)
+        gameObject.SetActive(true);
+
+        switch (state)
         {
-            if (levelText != null && GameManager.Levels != null)
-            {
+            case GameState.Menu:
+                tapToStartText.gameObject.SetActive(true);
+                levelText.gameObject.SetActive(true);
                 levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
-            }
-
-            LevelData currentLevelData = GameManager.Levels?.GetCurrentLevelData();
-            _fullDuration = currentLevelData.timerDuration;
+                break;
+            case GameState.Playing:
+                timerBar.gameObject.SetActive(true);
+                timerText.gameObject.SetActive(true);
+                levelText.gameObject.SetActive(true);
+                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
+                LevelData currentLevelData = GameManager.Levels?.GetCurrentLevelData();
+                _fullDuration = currentLevelData.timerDuration;
+                break;
+            case GameState.Complete:
+                winText.gameObject.SetActive(true);
+                levelText.gameObject.SetActive(true);
+                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
+                break;
+            case GameState.Fail:
+                loseText.gameObject.SetActive(true);
+                levelText.gameObject.SetActive(true);
+                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
+                break;
         }
+    }
+
+    public void HideTapToStart()
+    {
+        tapToStartText.gameObject.SetActive(false);
     }
 
     private void UpdateUI(float remaining)

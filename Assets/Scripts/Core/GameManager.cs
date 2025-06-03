@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Linq;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     
     private PassengerManager _passengerManager;
     private BusManager _busManager;
+    private GameHud _gameHud;
 
         private void Awake()
         {
@@ -36,19 +37,16 @@ public class GameManager : MonoBehaviour
             Input = new InputService();
             StateMachine = new GameStateMachine();
             Levels = new LevelService();
-            SaveLoad = new SaveLoadService(); // Initialize SaveLoadService
+            SaveLoad = new SaveLoadService();
             StateMachine.OnStateChanged += HandleState;
             
-            // Initialize Pools first as Managers might use it in constructor
             Pools = new PoolService(); 
-
-            // Initialize Managers
-            // BusManager needs to be initialized before PassengerManager if PassengerManager needs a reference to it.
+            
             _busManager = new BusManager(Pools, busPrefab, busStopTransform);
-            // Updated PassengerManager instantiation
             _passengerManager = new PassengerManager(Pools, passengerPrefab, passengerGridCellPrefab, passengerGridOrigin, queueSlotTransforms, _busManager, Input, StateMachine); 
             _busManager.OnAllBusesDeparted += CheckLevelWinCondition;
 
+            _gameHud = FindObjectOfType<GameHud>();
             StateMachine.ChangeState(GameState.Menu);
             
             Timer = new TimerService();
@@ -133,22 +131,26 @@ public class GameManager : MonoBehaviour
                         Input.OnTapWorld -= StartGameOnTap; 
                     }
 
-                    // Mark game as not in progress
                     GameSaveData endGameState = SaveLoad.LoadGame();
                     if (endGameState == null) endGameState = new GameSaveData();
                     endGameState.isInProgress = false;
-                    endGameState.currentLevelIndex = Levels.CurrentLevelIndex; // Save current level in case player wants to replay
-                    // For Fail, we might not want to save remainingTime or reset it.
-                    // For Complete, we advance, so next time it's a fresh level.
+                    endGameState.currentLevelIndex = Levels.CurrentLevelIndex;
                     SaveLoad.SaveGame(endGameState);
 
                     if (state == GameState.Complete)
                     {
                         Levels.AdvanceToNextLevel();
                     }
-                    StateMachine.ChangeState(GameState.Menu);
+                    StartCoroutine(EndLevelSequence(state));
                     break;
             }
+        }
+
+        private IEnumerator EndLevelSequence(GameState endState)
+        {
+            yield return new WaitForSeconds(2.5f);
+            
+            StateMachine.ChangeState(GameState.Menu);
         }
 
         private void SaveGameProgress()
@@ -201,18 +203,16 @@ public class GameManager : MonoBehaviour
                 Debug.Log("Level Complete! All passengers boarded and buses departed.");
                 if(StateMachine.Current == GameState.Playing) StateMachine.ChangeState(GameState.Complete);
             }
-            else if (_busManager.AreAllBusesGone && (_passengerManager.ActivePassengerCount > 0 || !_passengerManager.IsQueueEmpty))
-            {
-                // No more buses, but passengers remain
-                Debug.Log("Level Failed! No more buses available for remaining passengers.");
-                 if(StateMachine.Current == GameState.Playing) StateMachine.ChangeState(GameState.Fail);
-            }
         }
 
         private void StartGameOnTap(Vector3 position)
         {
             if (StateMachine.Current == GameState.Menu)
             {
+                if (_gameHud != null)
+                {
+                    _gameHud.HideTapToStart();
+                }
                 StateMachine.ChangeState(GameState.Playing);
             }
         }
