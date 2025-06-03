@@ -44,13 +44,13 @@ public class Passenger : MonoBehaviour
 
     public void Select()
     {
-        // TODO: Implement visual feedback for selection
+        // TODO: visual feedback for selection
         // Example: transform.localScale = Vector3.one * 1.2f;
     }
 
     public void Deselect()
     {
-        // TODO: Implement visual feedback for deselection
+        // TODO: visual feedback for deselection
         // Example: transform.localScale = Vector3.one;
     }
     

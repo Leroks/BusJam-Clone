@@ -289,8 +289,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   busRenderer: {fileID: 4839349978835645962}
   moveSpeed: 5
-  arrivalOffset: 10
-  departureOffset: 10
+  arrivalOffset: 5
+  departureOffset: 5
 --- !u!65 &8703239196582859647
 BoxCollider:
   m_ObjectHideFlags: 0

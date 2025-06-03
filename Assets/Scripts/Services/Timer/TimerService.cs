@@ -2,8 +2,8 @@ using System;
 
 public class TimerService : IDisposable
 {
-    public event System.Action<float> OnTick;
-        public event System.Action OnFinished;
+    public event Action<float> OnTick;
+        public event Action OnFinished;
 
         public bool IsRunning { get; private set; }
         public float Remaining { get; private set; }
@@ -13,8 +13,6 @@ public class TimerService : IDisposable
             Remaining = duration;
             IsRunning = true;
         }
-
-        public void Stop() => IsRunning = false;
 
         public void Tick(float deltaTime)
         {

@@ -57,7 +57,7 @@ public class GameManager : MonoBehaviour
         {
             Input?.Tick();
             
-            Timer.Tick(UnityEngine.Time.deltaTime);
+            Timer.Tick(Time.deltaTime);
         }
 
         private void HandleState(GameState state)
@@ -65,19 +65,11 @@ public class GameManager : MonoBehaviour
             switch (state)
             {
                 case GameState.Menu:
-                    Debug.Log("Entered Menu State. Ready for tap to start.");
-                    // TODO: Ensure Menu UI is visible and Game UI is hidden here.
-                    if (Input != null)
-                    {
-                        Input.OnTapWorld += StartGameOnTap; 
-                    }
+                    Debug.Log("Menu State tap to start.");
+                    Input.OnTapWorld += StartGameOnTap; 
                     break;
                 case GameState.Playing:
-                    // TODO: Ensure Game UI is visible and Menu UI is hidden here.
-                    if (Input != null)
-                    {
-                        Input.OnTapWorld -= StartGameOnTap;
-                    }
+                    Input.OnTapWorld -= StartGameOnTap;
                     _passengerManager.ClearQueue(); 
 
                     GameSaveData saveData = SaveLoad.LoadGame();
@@ -95,12 +87,9 @@ public class GameManager : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log("Starting new game or new level.");
+                        Debug.Log("Starting new level.");
                         levelToLoad = Levels.GetCurrentLevelData();
-                        if (levelToLoad != null)
-                        {
-                            timeToLoad = levelToLoad.timerDuration;
-                        }
+                        timeToLoad = levelToLoad.timerDuration;
                     }
                     
                     if (levelToLoad != null)
@@ -160,20 +149,10 @@ public class GameManager : MonoBehaviour
                 Debug.Log("Game progress saved.");
             }
         }
-        
-        private void SpawnPassengersForLevel(LevelData levelData)
-        {
-            _passengerManager.SpawnPassengersForLevel(levelData);
-        }
 
         private void DespawnAllPassengers()
         {
             _passengerManager.DespawnAllPassengers();
-        }
-        
-        private void SpawnBusesForLevel(LevelData levelData)
-        {
-            _busManager.SpawnBusesForLevel(levelData);
         }
 
         private void DespawnAllBuses()
@@ -186,7 +165,7 @@ public class GameManager : MonoBehaviour
             if (_passengerManager.ActivePassengerCount == 0 && _passengerManager.IsQueueEmpty && 
                 _busManager.DepartedBusCount >= _busManager.InitialBusCountForLevel && _busManager.InitialBusCountForLevel > 0)
             {
-                Debug.Log("Level Complete! All passengers boarded and buses departed.");
+                Debug.Log("Level Complete!");
                 if(StateMachine.Current == GameState.Playing) StateMachine.ChangeState(GameState.Complete);
             }
         }

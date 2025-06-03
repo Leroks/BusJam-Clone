@@ -7,9 +7,9 @@ using DG.Tweening;
 public class Bus : MonoBehaviour
 {
     [SerializeField] private Renderer busRenderer;
-    [SerializeField] private float moveSpeed = 5f; // Speed for both arrival and departure
-    [SerializeField] private float arrivalOffset = 10f; // How far left it starts from the stop
-    [SerializeField] private float departureOffset = 10f; // How far it moves right before despawning
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float arrivalOffset = 5f;
+    [SerializeField] private float departureOffset = 5f;
 
     public event Action<Bus> OnBusReadyToDepart;
     public event Action<Bus> OnBusArrivedAtStop;
@@ -28,34 +28,23 @@ public class Bus : MonoBehaviour
     {
         BusColor = data.color;
         Capacity = data.capacity;
-        _busStopPosition = actualStopPosition; // Use the actual stop position passed from BusManager
+        _busStopPosition = actualStopPosition;
 
-        // Set initial position to the left, off-screen, relative to the actual stop position
         transform.position = _busStopPosition - Vector3.right * arrivalOffset;
 
         CurrentPassengerCount = 0;
         _passengersOnBoard = new List<Passenger>(Capacity);
 
         ApplyBusColor();
-        // UpdateVisuals(); // e.g., show empty seats
-        // Arrival routine will be started by BusManager now
     }
 
     public void StartArrivalSequence()
     {
-        if (gameObject.activeInHierarchy)
-        {
-            StartCoroutine(ArriveAtStopRoutine());
-        }
-        else
-        {
-            Debug.LogWarning($"Bus {gameObject.name} is not active. Cannot start arrival sequence. It will start when activated by BusManager.");
-        }
+        StartCoroutine(ArriveAtStopRoutine());
     }
 
     private IEnumerator ArriveAtStopRoutine()
     {
-        Debug.Log($"Bus {gameObject.name} starting arrival routine to stop position: {_busStopPosition}. Current pos: {transform.position}");
         Vector3 initialPosition = transform.position;
         float journeyLength = Vector3.Distance(initialPosition, _busStopPosition);
         float startTime = Time.time;
@@ -73,10 +62,8 @@ public class Bus : MonoBehaviour
                 yield return null;
             }
         }
-        transform.position = _busStopPosition; // Ensure it reaches the exact target stop position
-        Debug.Log($"Bus {gameObject.name} arrived at stop.");
+        transform.position = _busStopPosition;
         
-        // Start yoyo animation once at stop
         transform.DOMoveY(transform.position.y + 0.005f, 0.2f).SetEase(Ease.InOutQuad).SetLoops(-1, LoopType.Yoyo);
         OnBusArrivedAtStop?.Invoke(this);
     }
@@ -115,11 +102,7 @@ public class Bus : MonoBehaviour
 
         CurrentPassengerCount++;
         _passengersOnBoard.Add(passenger);
-        // passenger.gameObject.SetActive(false); // Or parent to bus, move to seat
-        // UpdateVisuals();
-
-        Debug.Log($"Passenger boarded {BusColor} bus. Current count: {CurrentPassengerCount}/{Capacity}");
-
+        
         if (IsFull)
         {
             HandleBusFull();
@@ -129,7 +112,7 @@ public class Bus : MonoBehaviour
 
     private void HandleBusFull()
     {
-        Debug.Log($"{BusColor} bus ({gameObject.name}) is now full and ready to depart!");
+        Debug.Log($"{BusColor} bus ({gameObject.name}) is full and ready to depart");
         OnBusReadyToDepart?.Invoke(this);
     }
 
@@ -141,15 +124,14 @@ public class Bus : MonoBehaviour
     private IEnumerator DepartRoutine()
     {
         Debug.Log($"Bus {gameObject.name} starting departure routine.");
-        // Stop yoyo animation before departure
-        DOTween.Kill(transform, true); // Kills tweens on this transform, 'true' to complete them immediately if they are mid-way.
+        DOTween.Kill(transform, true);
 
-        Vector3 initialPosition = transform.position; // Should be _busStopPosition
+        Vector3 initialPosition = transform.position;
         Vector3 targetPosition = initialPosition + Vector3.right * departureOffset;
         float journeyLength = Vector3.Distance(initialPosition, targetPosition);
         float startTime = Time.time;
 
-        if (journeyLength > 0) // Ensure there's a distance to travel
+        if (journeyLength > 0)
         {
             float distCovered = (Time.time - startTime) * moveSpeed;
             float fractionOfJourney = distCovered / journeyLength;
@@ -163,25 +145,11 @@ public class Bus : MonoBehaviour
             }
         }
         
-        transform.position = targetPosition; // Ensure it reaches the exact target
-
-        Debug.Log($"Bus {gameObject.name} reached departure point. Invoking OnDepartureComplete and despawning.");
+        transform.position = targetPosition;
         
-        // Notify completion before despawning itself from the perspective of GameManager
         OnDepartureComplete?.Invoke(this);
-
-        // Despawn logic: Get the pool and despawn this bus instance's transform
-        // This assumes GameManager.Pools is accessible or Bus has a reference to its pool.
-        // For simplicity, let's assume GameManager will handle the actual despawn from its list
-        // and the pool after OnDepartureComplete. The bus just deactivates itself.
-        // However, a cleaner way is for the bus to request despawn from the pool service if it knows its pool.
-        // For now, just deactivate. GameManager will handle the actual pool despawn via _allSpawnedBusTransforms.
+        
         gameObject.SetActive(false); 
-        // If GameManager is not managing the despawn from _allSpawnedBusTransforms based on this event,
-        // then the bus should handle its own return to the pool here.
-        // Example: GameManager.Pools.Get<Transform>("bus").Despawn(transform);
-        // This creates a dependency on GameManager.Pools static access.
     }
 
-    // Add other bus behaviors: movement, opening/closing doors, etc.
 }

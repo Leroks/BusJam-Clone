@@ -5,7 +5,6 @@ public class GameSaveData
     public int currentLevelIndex;
     public float remainingTime;
     public bool isInProgress;
-    // Add more fields here for passenger/bus states later
 }
 
 public class SaveLoadService
@@ -31,17 +30,5 @@ public class SaveLoadService
         }
         Debug.Log("No save data found.");
         return null;
-    }
-
-    public void ClearSaveData()
-    {
-        PlayerPrefs.DeleteKey(SaveKey);
-        PlayerPrefs.Save();
-        Debug.Log("Save data cleared.");
-    }
-
-    public bool HasSaveData()
-    {
-        return PlayerPrefs.HasKey(SaveKey);
     }
 }

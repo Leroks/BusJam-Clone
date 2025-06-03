@@ -44,48 +44,20 @@ public class PassengerManager
         }
         else
         {
-            Debug.LogError("PassengerManager: queueSlotTransforms is null. Queue functionality will be impaired.");
             _queueSlots = new Passenger[0];
         }
-
-        if (_passengerPrefab != null)
-        {
-            _poolService.RegisterPool("passenger", _passengerPrefab.GetComponent<Transform>(), 50, "Passengers");
-        }
-        else
-        {
-            Debug.LogError("PassengerManager: Passenger prefab is null. Cannot register pool.");
-        }
-
-        if (_inputService != null)
-        {
-            _inputService.OnPassengerTap += HandlePassengerTap;
-        }
-        else
-        {
-            Debug.LogError("PassengerManager: InputService is null. Passenger taps will not be handled.");
-        }
-
-        if (_busManager != null)
-        {
-            _busManager.OnBusAtStopReadyForBoarding += AttemptAutoBoardQueuedPassengers;
-        }
-        else
-        {
-            Debug.LogError("PassengerManager: BusManager is null. Cannot subscribe to OnBusAtStopReadyForBoarding.");
-        }
+        
+        _poolService.RegisterPool("passenger", _passengerPrefab.GetComponent<Transform>(), 20, "Passengers");
+        
+        _inputService.OnPassengerTap += HandlePassengerTap;
+        
+        _busManager.OnBusAtStopReadyForBoarding += AttemptAutoBoardQueuedPassengers;
     }
 
     public void Dispose()
     {
-        if (_inputService != null)
-        {
-            _inputService.OnPassengerTap -= HandlePassengerTap;
-        }
-        if (_busManager != null)
-        {
-            _busManager.OnBusAtStopReadyForBoarding -= AttemptAutoBoardQueuedPassengers;
-        }
+        _inputService.OnPassengerTap -= HandlePassengerTap;
+        _busManager.OnBusAtStopReadyForBoarding -= AttemptAutoBoardQueuedPassengers;
     }
 
     private void AttemptAutoBoardQueuedPassengers(Bus busAtStop)
@@ -99,8 +71,6 @@ public class PassengerManager
             Passenger passengerInQueue = _queueSlots[i];
             if (passengerInQueue != null && !passengerInQueue.IsMoving && busAtStop.CanBoard(passengerInQueue))
             {
-                Debug.Log($"PassengerManager: Auto-boarding passenger {passengerInQueue.name} from queue slot {i} to bus {busAtStop.name}.");
-                
                 _queueSlots[i] = null;
 
                 Vector3 boardingPoint = busAtStop.transform.position;
@@ -109,17 +79,12 @@ public class PassengerManager
                     if (busAtStop.AddPassenger(passengerInQueue))
                     {
                         DespawnSinglePassenger(passengerInQueue);
-                        Debug.Log($"PassengerManager: Auto-boarded passenger {passengerInQueue.name} successfully.");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"PassengerManager: Auto-boarding for {passengerInQueue.name} failed after move (bus full or wrong color).");
                     }
                 });
 
                 if (busAtStop.IsFull)
                 {
-                    Debug.Log($"PassengerManager: Bus {busAtStop.name} became full during auto-boarding. Stopping further auto-boards for this bus.");
+                    Debug.Log("Bus at stop full stop auto boarding");
                     break; 
                 }
             }
@@ -143,12 +108,10 @@ public class PassengerManager
             {
                 if (i >= _dynamicGridCellTransforms.Count || _dynamicGridCellTransforms[i] == null)
                 {
-                    Debug.LogWarning($"PassengerManager: DynamicGridCellTransform element {i} is null or out of bounds. Skipping.");
                     continue;
                 }
-                if (i >= levelData.standardGridPassengers.Count) // Safety check for passenger data
+                if (i >= levelData.standardGridPassengers.Count)
                 {
-                    Debug.LogWarning($"PassengerManager: Not enough passenger color data for grid cell {i}. Skipping.");
                     continue;
                 }
 
@@ -199,7 +162,7 @@ public class PassengerManager
         float startY = _gridOrigin != null ? _gridOrigin.position.y : 0f;
         float startZ = _gridOrigin != null ? _gridOrigin.position.z : 0f;
 
-        // Centering
+        // Centering the grid
         startX -= (gridWidth - 1) * cellSpacingX / 2.0f;
         startZ -= (gridHeight - 1) * cellSpacingZ / 2.0f;
 
@@ -223,7 +186,7 @@ public class PassengerManager
                 _dynamicGridCellTransforms.Add(cellInstance.transform);
             }
         }
-        Debug.Log($"PassengerManager: Created dynamic grid {gridWidth}x{gridHeight} with {_dynamicGridCellTransforms.Count} cells.");
+        Debug.Log($"grid created: {gridWidth}x{gridHeight} with {_dynamicGridCellTransforms.Count} cells.");
     }
 
     private void ClearPassengerFromGrid(Passenger passenger)
@@ -265,14 +228,6 @@ public class PassengerManager
     public bool IsPassengerActive(Passenger passenger)
     {
         return passenger != null && _activePassengerTransforms.Contains(passenger.transform);
-    }
-
-    public void RemoveFromActiveList(Passenger passenger)
-    {
-        if (passenger != null)
-        {
-            _activePassengerTransforms.Remove(passenger.transform);
-        }
     }
 
     public void DespawnAllPassengers()
@@ -360,7 +315,6 @@ public class PassengerManager
                 }
                 else
                 {
-                    Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {targetBus.name} after move.");
                     if(wasInActiveList && !IsPassengerActive(tappedPassenger)) _activePassengerTransforms.Add(tappedPassenger.transform);
                 }
             });
@@ -369,13 +323,11 @@ public class PassengerManager
         {
             if (queueIndex != -1)
             {
-                Debug.Log($"Tapped passenger {tappedPassenger.name} from queue, but no bus available. Stays in queue.");
                 return;
             }
 
             if (_queueSlotTransforms == null || _queueSlots == null || _queueSlotTransforms.Length == 0)
             {
-                Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and no queue slots available/defined.");
                 return;
             }
 
@@ -391,12 +343,9 @@ public class PassengerManager
 
                 tappedPassenger.MoveToPosition(_queueSlotTransforms[emptyQueueSlotIndex].position, () =>
                 {
-                    Debug.Log($"Passenger {tappedPassenger.name} arrived at queue slot {emptyQueueSlotIndex}.");
-
                     Bus availableBus = FindBusForPassenger(tappedPassenger);
                     if (availableBus != null && _busManager.IsActiveBusAtStop)
                     {
-                        Debug.Log($"Passenger {tappedPassenger.name} at queue slot {emptyQueueSlotIndex} can immediately board bus {availableBus.name}.");
                         _queueSlots[emptyQueueSlotIndex] = null;
 
                         Vector3 boardingPoint = availableBus.transform.position;
@@ -405,11 +354,6 @@ public class PassengerManager
                             if (availableBus.AddPassenger(tappedPassenger))
                             {
                                 DespawnSinglePassenger(tappedPassenger);
-                                Debug.Log($"Passenger {tappedPassenger.name} successfully boarded bus {availableBus.name} from queue after immediate check.");
-                            }
-                            else
-                            {
-                                Debug.LogWarning($"Passenger {tappedPassenger.name} failed to board bus {availableBus.name} from queue after immediate check (bus full/color mismatch).");
                             }
                         });
                     }
@@ -417,7 +361,7 @@ public class PassengerManager
             }
             else
             {
-                Debug.Log($"Passenger {tappedPassenger.name} cannot board a bus and queue is full.");
+                Debug.Log("Cannot board and queue is full");
             }
         }
     }
@@ -441,7 +385,7 @@ public class PassengerManager
             int cellInPathIndex = rToCheck * gridWidth + col;
             if (cellInPathIndex < _gridCellOccupants.Length && _gridCellOccupants[cellInPathIndex] != null)
             {
-                Debug.Log($"Path for passenger at ({row},{col}) is blocked by passenger at ({rToCheck},{col}).");
+                Debug.Log($"Path of passenger at ({row},{col}) is blocked by passenger at ({rToCheck},{col}).");
                 return false; // Path is blocked
             }
         }
