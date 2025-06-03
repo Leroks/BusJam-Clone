@@ -70,24 +70,7 @@ public class Bus : MonoBehaviour
     
     private void ApplyBusColor()
     {
-        busRenderer.material.color = GetUnityColor(BusColor);
-    }
-
-    // TODO: Move this to a utility class
-    private Color GetUnityColor(PassengerColor colorEnum)
-    {
-        // This method can be shared or put in a utility class if used by many components
-        switch (colorEnum)
-        {
-            case PassengerColor.Red: return Color.red;
-            case PassengerColor.Green: return Color.green;
-            case PassengerColor.Blue: return Color.blue;
-            case PassengerColor.Yellow: return Color.yellow;
-            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f);
-            case PassengerColor.Orange: return new Color(1f, 0.5f, 0f);
-            case PassengerColor.Black: return Color.grey;
-            default: return Color.white;
-        }
+        busRenderer.material.color = ColorUtility.GetUnityColor(BusColor);
     }
 
     public bool CanBoard(Passenger passenger)

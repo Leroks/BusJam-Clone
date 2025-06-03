@@ -235,7 +235,7 @@ public class LevelEditorManager : MonoBehaviour
     {
         if (cell.uiImage != null)
         {
-            cell.uiImage.color = GetUnityColorForPassenger(cell.passengerColor);
+            cell.uiImage.color = ColorUtility.GetUnityColor(cell.passengerColor);
         }
     }
 
@@ -255,7 +255,7 @@ public class LevelEditorManager : MonoBehaviour
     {
         GameObject paletteButtonGO = Instantiate(paletteItemPrefab, paletteContainer.transform);
         Image buttonImage = paletteButtonGO.GetComponent<Image>();
-        if(buttonImage != null) buttonImage.color = GetUnityColorForPassenger(color);
+        if(buttonImage != null) buttonImage.color = ColorUtility.GetUnityColor(color);
         
         Button button = paletteButtonGO.GetComponent<Button>();
         if(button != null) button.onClick.AddListener(() => SelectPaletteColor(color));
@@ -267,21 +267,6 @@ public class LevelEditorManager : MonoBehaviour
     private void SelectPaletteColor(PassengerColor color)
     {
         selectedPaletteColor = color;
-    }
-    
-    Color GetUnityColorForPassenger(PassengerColor pc)
-    {
-        switch (pc)
-        {
-            case PassengerColor.Red: return Color.red;
-            case PassengerColor.Green: return Color.green;
-            case PassengerColor.Blue: return Color.blue;
-            case PassengerColor.Yellow: return Color.yellow;
-            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f);
-            case PassengerColor.Orange: return new Color(1f, 0.5f, 0f);
-            case PassengerColor.Black: return Color.black;
-            default: return Color.grey;
-        }
     }
 
     private void UpdateBusSpawnQueueUI()
@@ -296,7 +281,7 @@ public class LevelEditorManager : MonoBehaviour
             BusData busData = currentSelectedLevel.busConfigurations[i];
             GameObject itemGO = Instantiate(busQueueItemPrefab, busSpawnQueueContainer.transform);
             Image itemImage = itemGO.GetComponent<Image>();
-            if(itemImage != null) itemImage.color = GetUnityColorForPassenger(busData.color);
+            if(itemImage != null) itemImage.color = ColorUtility.GetUnityColor(busData.color);
             
             Button itemButton = itemGO.GetComponent<Button>();
             if (itemButton != null)
@@ -319,7 +304,7 @@ public class LevelEditorManager : MonoBehaviour
         
         if (busItemImage != null)
         {
-            busItemImage.color = GetUnityColorForPassenger(selectedPaletteColor);
+            busItemImage.color = ColorUtility.GetUnityColor(selectedPaletteColor);
         }
     }
 

@@ -24,22 +24,7 @@ public class Passenger : MonoBehaviour
 
     private void ApplyColor()
     {
-        passengerRenderer.material.color = GetUnityColor(CurrentColor);
-    }
-
-    private Color GetUnityColor(PassengerColor colorEnum)
-    {
-        switch (colorEnum)
-        {
-            case PassengerColor.Red: return Color.red;
-            case PassengerColor.Green: return Color.green;
-            case PassengerColor.Blue: return Color.blue;
-            case PassengerColor.Yellow: return Color.yellow;
-            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f);
-            case PassengerColor.Orange: return new Color(1f, 0.5f, 0f);
-            case PassengerColor.Black: return Color.black;
-            default: return Color.white;
-        }
+        passengerRenderer.material.color = ColorUtility.GetUnityColor(CurrentColor);
     }
 
     public void Select()
