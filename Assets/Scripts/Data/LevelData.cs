@@ -5,9 +5,9 @@ using System.Collections.Generic;
 public class LevelData : ScriptableObject
 {
     public int levelId;
-    public float timerDuration = 30f;
-    public int gridWidth = 4;
-    public int gridHeight = 4;
+    public float timerDuration = 45f;
+    public int gridWidth = 3;
+    public int gridHeight = 2;
 
     [Header("Passenger Grid Configuration")]
     public List<PassengerColor> standardGridPassengers = new List<PassengerColor>(); 

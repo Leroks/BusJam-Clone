@@ -5,10 +5,17 @@ using System;
 public class BusData
 {
     public PassengerColor color;
-    public readonly int capacity = 3;
+    public int capacity = 3;
+
+    public BusData()
+    {
+        this.color = PassengerColor.Red;
+        this.capacity = 3;
+    }
 
     public BusData(PassengerColor color)
     {
         this.color = color;
+        this.capacity = 3;
     }
 }
