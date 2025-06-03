@@ -55,7 +55,7 @@ public class LevelEditorManager : MonoBehaviour
     }
     private List<EditorGridCell> editorGridCells = new List<EditorGridCell>();
 
-    private PassengerColor selectedPaletteColor = PassengerColor.None;
+    private PassengerColor selectedPaletteColor = PassengerColor.Red; // Default to Red
 
 
     void Start()
@@ -218,9 +218,9 @@ public class LevelEditorManager : MonoBehaviour
                     {
                         cell.passengerColor = currentSelectedLevel.standardGridPassengers[index];
                     }
-                    else cell.passengerColor = PassengerColor.None;
+                    else cell.passengerColor = PassengerColor.Red; // Default to Red
                 }
-                else cell.passengerColor = PassengerColor.None;
+                else cell.passengerColor = PassengerColor.Red; // Default to Red
                 
                 UpdateCellVisual(cell);
                 editorGridCells.Add(cell);
@@ -253,13 +253,13 @@ public class LevelEditorManager : MonoBehaviour
         if (paletteContainer == null || paletteItemPrefab == null) return;
         foreach (Transform child in paletteContainer.transform) Destroy(child.gameObject);
 
-        CreatePaletteButtonTMP(PassengerColor.None); // For "Empty"
-
+        // Create buttons for all defined passenger colors
         foreach (PassengerColor color in System.Enum.GetValues(typeof(PassengerColor)))
         {
-            if (color == PassengerColor.None) continue;
             CreatePaletteButtonTMP(color);
         }
+        // Set initial selected palette color (e.g. Red)
+        SelectPaletteColor(PassengerColor.Red);
     }
 
     void CreatePaletteButtonTMP(PassengerColor color)
@@ -272,7 +272,7 @@ public class LevelEditorManager : MonoBehaviour
         if(button != null) button.onClick.AddListener(() => SelectPaletteColor(color));
         
         TMP_Text buttonText = paletteButtonGO.GetComponentInChildren<TMP_Text>();
-        if (buttonText != null) buttonText.text = color == PassengerColor.None ? "Empty" : color.ToString();
+        if (buttonText != null) buttonText.text = color.ToString();
     }
 
     void SelectPaletteColor(PassengerColor color)
@@ -289,11 +289,11 @@ public class LevelEditorManager : MonoBehaviour
             case PassengerColor.Green: return Color.green;
             case PassengerColor.Blue: return Color.blue;
             case PassengerColor.Yellow: return Color.yellow;
-            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f);
+            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f); // Magenta-like
             case PassengerColor.Orange: return new Color(1f, 0.5f, 0f);
             case PassengerColor.Black: return Color.black;
-            case PassengerColor.None: return Color.white; 
-            default: return Color.grey;
+            // Removed PassengerColor.None case
+            default: return Color.grey; // Fallback for unmapped colors
         }
     }
 
@@ -320,20 +320,28 @@ public class LevelEditorManager : MonoBehaviour
     void AddBusToQueue()
     {
         if (currentSelectedLevel == null) return;
+        // Default to the first color in the enum (which should be Red now)
+        // or a specific default like PassengerColor.Red
         PassengerColor newBusColor = PassengerColor.Red; 
-        bool colorFound = false;
-        foreach(PassengerColor c in System.Enum.GetValues(typeof(PassengerColor))) {
-            if (c != PassengerColor.None) {
-                newBusColor = c;
-                colorFound = true;
-                break;
+        if (System.Enum.GetValues(typeof(PassengerColor)).Length > 0)
+        {
+            // Ensure there's at least one color defined.
+            // If PassengerColor.Red is not guaranteed to be first, explicitly set it.
+            bool foundRed = false;
+            foreach(PassengerColor c in System.Enum.GetValues(typeof(PassengerColor))) {
+                if (c == PassengerColor.Red) {
+                    newBusColor = PassengerColor.Red;
+                    foundRed = true;
+                    break;
+                }
             }
+            if (!foundRed) { // If Red is not in enum (should not happen), pick first available
+                 newBusColor = (PassengerColor)System.Enum.GetValues(typeof(PassengerColor)).GetValue(0);
+            }
+        } else {
+            Debug.LogError("No PassengerColors defined in enum!");
+            return; // Cannot add a bus without a color
         }
-        if (!colorFound && System.Enum.GetValues(typeof(PassengerColor)).Length > 0) {
-             // Fallback if only 'None' exists for some reason, though unlikely with current enum
-            newBusColor = (PassengerColor)System.Enum.GetValues(typeof(PassengerColor)).GetValue(0);
-        }
-
         currentSelectedLevel.busConfigurations.Add(new BusData(newBusColor));
         UpdateBusSpawnQueueUI();
     }
@@ -358,7 +366,7 @@ public class LevelEditorManager : MonoBehaviour
         if (currentSelectedLevel == null) return;
         foreach(var cell in editorGridCells)
         {
-            cell.passengerColor = PassengerColor.None;
+            cell.passengerColor = PassengerColor.Red; // Default to Red
             UpdateCellVisual(cell);
         }
     }
@@ -383,7 +391,7 @@ public class LevelEditorManager : MonoBehaviour
         int totalCells = currentSelectedLevel.gridWidth * currentSelectedLevel.gridHeight;
         for (int i = 0; i < totalCells; i++)
         {
-            currentSelectedLevel.standardGridPassengers.Add(PassengerColor.None);
+            currentSelectedLevel.standardGridPassengers.Add(PassengerColor.Red); // Initialize with Red
         }
 
         foreach (var cell in editorGridCells)
@@ -424,10 +432,10 @@ public class LevelEditorManager : MonoBehaviour
         // Defaults are set in LevelData class definition
         // newLevel.timerDuration = 30f; 
         // newLevel.gridWidth = 4; 
-        // newLevel.gridHeight = 4; 
+        // newLevel.gridHeight = 4; // Defaults are set in LevelData
         newLevel.standardGridPassengers = new List<PassengerColor>();
         for(int i = 0; i < newLevel.gridWidth * newLevel.gridHeight; i++) {
-            newLevel.standardGridPassengers.Add(PassengerColor.None);
+            newLevel.standardGridPassengers.Add(PassengerColor.Red); // Default new level cells to Red
         }
         newLevel.busConfigurations = new List<BusData>();
 
