@@ -120,7 +120,7 @@ public class PassengerManager
                 if (passengerInstance != null)
                 {
                     passengerInstance.gameObject.SetActive(true);
-                    passengerInstance.position = _dynamicGridCellTransforms[i].position; 
+                    passengerInstance.position = _dynamicGridCellTransforms[i].position + new Vector3(0, 0.03f, 0); 
                     passengerInstance.rotation = Quaternion.identity;
 
                     Passenger passengerComponent = passengerInstance.GetComponent<Passenger>();
