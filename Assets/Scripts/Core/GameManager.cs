@@ -70,7 +70,6 @@ public class GameManager : MonoBehaviour
                     if (Input != null)
                     {
                         Input.OnTapWorld += StartGameOnTap; 
-                        SetGameplayInputActive(false);
                     }
                     break;
                 case GameState.Playing:
@@ -78,7 +77,6 @@ public class GameManager : MonoBehaviour
                     if (Input != null)
                     {
                         Input.OnTapWorld -= StartGameOnTap;
-                        SetGameplayInputActive(true);
                     }
                     _passengerManager.ClearQueue(); 
 
@@ -119,17 +117,11 @@ public class GameManager : MonoBehaviour
                     break;
                 case GameState.Fail:
                 case GameState.Complete:
-                    if (Input != null)
-                    {
-                        SetGameplayInputActive(false);
-                    }
                     _passengerManager.ClearQueue();
                     DespawnAllPassengers();
                     DespawnAllBuses();
-                    if (Input != null)
-                    {
-                        Input.OnTapWorld -= StartGameOnTap; 
-                    }
+
+                    Input.OnTapWorld -= StartGameOnTap; 
 
                     GameSaveData endGameState = SaveLoad.LoadGame();
                     if (endGameState == null) endGameState = new GameSaveData();
@@ -162,7 +154,7 @@ public class GameManager : MonoBehaviour
                     currentLevelIndex = Levels.CurrentLevelIndex,
                     remainingTime = Timer.Remaining,
                     isInProgress = true
-                    // TODO: Add passenger and bus states here
+                    // TODO: Add passenger and bus states
                 };
                 SaveLoad.SaveGame(saveData);
                 Debug.Log("Game progress saved.");
@@ -187,12 +179,6 @@ public class GameManager : MonoBehaviour
         private void DespawnAllBuses()
         {
             _busManager.DespawnAllBuses();
-        }
-
-        private void SetGameplayInputActive(bool isActive)
-        {
-            // This is a placeholder if we decide to register/unregister events in HandleState
-            // For now, the handlers themselves will check StateMachine.Current == GameState.Playing
         }
 
         private void CheckLevelWinCondition()
