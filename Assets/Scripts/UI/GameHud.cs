@@ -35,7 +35,7 @@ public class GameHud : MonoBehaviour
         {
             if (levelText != null && GameManager.Levels != null)
             {
-                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelNumber}";
+                levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
             }
 
             LevelData currentLevelData = GameManager.Levels?.GetCurrentLevelData();

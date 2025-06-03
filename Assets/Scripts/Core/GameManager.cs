@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     public static InputService Input { get; private set; }
     public static TimerService Timer { get; private set; }
     public static LevelService Levels { get; private set; }
+    public static SaveLoadService SaveLoad { get; private set; }
     
     [SerializeField] private GameObject passengerPrefab;
     [SerializeField] private GameObject busPrefab;
@@ -35,6 +36,7 @@ public class GameManager : MonoBehaviour
             Input = new InputService();
             StateMachine = new GameStateMachine();
             Levels = new LevelService();
+            SaveLoad = new SaveLoadService(); // Initialize SaveLoadService
             StateMachine.OnStateChanged += HandleState;
             
             // Initialize Pools first as Managers might use it in constructor
@@ -80,18 +82,40 @@ public class GameManager : MonoBehaviour
                         Input.OnTapWorld -= StartGameOnTap;
                         SetGameplayInputActive(true);
                     }
-                    _passengerManager.ClearQueue(); // Use PassengerManager's ClearQueue
-                    LevelData currentLevelData = Levels.GetCurrentLevelData();
-                    if (currentLevelData != null)
+                    _passengerManager.ClearQueue(); 
+
+                    GameSaveData saveData = SaveLoad.LoadGame();
+                    LevelData levelToLoad;
+                    float timeToLoad = 0f;
+
+                    if (saveData != null && saveData.isInProgress)
                     {
-                        Timer.Start(currentLevelData.timerDuration);
-                        _passengerManager.SpawnPassengersForLevel(currentLevelData);
-                        _busManager.SpawnBusesForLevel(currentLevelData);
+                        Debug.Log("Resuming game from saved state.");
+                        Levels.SetCurrentLevel(saveData.currentLevelIndex);
+                        levelToLoad = Levels.GetCurrentLevelData();
+                        timeToLoad = saveData.remainingTime;
+                        saveData.isInProgress = false; 
+                        SaveLoad.SaveGame(saveData);
+                    }
+                    else
+                    {
+                        Debug.Log("Starting new game or new level.");
+                        levelToLoad = Levels.GetCurrentLevelData();
+                        if (levelToLoad != null)
+                        {
+                            timeToLoad = levelToLoad.timerDuration;
+                        }
+                    }
+                    
+                    if (levelToLoad != null)
+                    {
+                        Timer.Start(timeToLoad);
+                        _passengerManager.SpawnPassengersForLevel(levelToLoad);
+                        _busManager.SpawnBusesForLevel(levelToLoad);
                     }
                     else
                     {
                         Debug.LogError("Cannot start game: CurrentLevelData is null.");
-                        // Optionally, transition to an error state or back to menu
                         StateMachine.ChangeState(GameState.Menu); 
                     }
                     break;
@@ -108,12 +132,38 @@ public class GameManager : MonoBehaviour
                     {
                         Input.OnTapWorld -= StartGameOnTap; 
                     }
+
+                    // Mark game as not in progress
+                    GameSaveData endGameState = SaveLoad.LoadGame();
+                    if (endGameState == null) endGameState = new GameSaveData();
+                    endGameState.isInProgress = false;
+                    endGameState.currentLevelIndex = Levels.CurrentLevelIndex; // Save current level in case player wants to replay
+                    // For Fail, we might not want to save remainingTime or reset it.
+                    // For Complete, we advance, so next time it's a fresh level.
+                    SaveLoad.SaveGame(endGameState);
+
                     if (state == GameState.Complete)
                     {
                         Levels.AdvanceToNextLevel();
                     }
                     StateMachine.ChangeState(GameState.Menu);
                     break;
+            }
+        }
+
+        private void SaveGameProgress()
+        {
+            if (StateMachine.Current == GameState.Playing)
+            {
+                GameSaveData saveData = new GameSaveData
+                {
+                    currentLevelIndex = Levels.CurrentLevelIndex,
+                    remainingTime = Timer.Remaining,
+                    isInProgress = true
+                    // TODO: Add passenger and bus states here
+                };
+                SaveLoad.SaveGame(saveData);
+                Debug.Log("Game progress saved.");
             }
         }
         
@@ -142,14 +192,9 @@ public class GameManager : MonoBehaviour
             // This is a placeholder if we decide to register/unregister events in HandleState
             // For now, the handlers themselves will check StateMachine.Current == GameState.Playing
         }
-        
-        // ClearQueue, HandlePassengerTap, FindBusForPassenger, FindEmptyQueueSlot, DespawnSinglePassenger
-        // have been moved to PassengerManager.cs
 
         private void CheckLevelWinCondition()
         {
-            // This event is now also triggered by BusManager.OnAllBusesDeparted
-            // We need to ensure this check is robust for both timer end and bus departure scenarios.
             if (_passengerManager.ActivePassengerCount == 0 && _passengerManager.IsQueueEmpty && 
                 _busManager.DepartedBusCount >= _busManager.InitialBusCountForLevel && _busManager.InitialBusCountForLevel > 0)
             {
@@ -178,6 +223,19 @@ public class GameManager : MonoBehaviour
             {
                 StateMachine.ChangeState(GameState.Fail);
             }
+        }
+
+        private void OnApplicationPause(bool pauseStatus)
+        {
+            if (pauseStatus)
+            {
+                SaveGameProgress();
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveGameProgress();
         }
         
         private void OnDestroy()

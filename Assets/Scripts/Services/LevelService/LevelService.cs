@@ -5,9 +5,9 @@ using System.Linq;
 public class LevelService
 {
     private List<LevelData> _levels;
-    public int CurrentLevelNumber { get; private set; } = 1;
+    public int CurrentLevelIndex { get; private set; } = 0;
 
-    private const string PlayerPrefsLevelKey = "CurrentBusJamLevel";
+    private const string PlayerPrefsLevelKey = "CurrentBusJamLevelIndex";
 
     public LevelService()
     {
@@ -28,61 +28,57 @@ public class LevelService
         }
     }
 
-    public LevelData GetLevelData(int levelNumber)
+    public LevelData GetLevelDataByIndex(int index)
     {
-        if (levelNumber <= 0) levelNumber = 1;
-
-        if (levelNumber > 0 && levelNumber <= _levels.Count)
+        if (_levels == null || _levels.Count == 0) return null;
+        if (index >= 0 && index < _levels.Count)
         {
-            LevelData level = _levels.FirstOrDefault(ld => ld.levelId == levelNumber);
-            if (level != null) return level;
-
-            Debug.LogWarning($"LevelData for level ID {levelNumber} not found. Returning first available level.");
-            return _levels.Count > 0 ? _levels[0] : null;
+            return _levels[index];
         }
-        
-        Debug.LogWarning($"Requested level number {levelNumber} is out of bounds. Max levels: {_levels.Count}. Returning last available level.");
-        return _levels.Count > 0 ? _levels.LastOrDefault() : null;
+        return _levels[Mathf.Clamp(index, 0, _levels.Count - 1)];
     }
 
     public LevelData GetCurrentLevelData()
     {
-        return GetLevelData(CurrentLevelNumber);
+        return GetLevelDataByIndex(CurrentLevelIndex);
+    }
+
+    public void SetCurrentLevel(int levelIndex)
+    {
+        CurrentLevelIndex = Mathf.Clamp(levelIndex, 0, _levels.Count - 1);
+        SaveProgress();
+        Debug.Log($"Current level set to index: {CurrentLevelIndex}");
     }
 
     public void AdvanceToNextLevel()
     {
-        if (CurrentLevelNumber < _levels.Count)
+        int nextLevelIndex = CurrentLevelIndex + 1;
+        if (nextLevelIndex >= _levels.Count)
         {
-            CurrentLevelNumber++;
+            Debug.Log("All levels completed! Restarting from level index 0");
+            nextLevelIndex = 0;
         }
-        else
-        {
-            Debug.Log("All levels completed! Restarting from level 1");
-            CurrentLevelNumber = 1;
-        }
-        SaveProgress();
+        SetCurrentLevel(nextLevelIndex);
     }
 
     public void LoadProgress()
     {
-        CurrentLevelNumber = PlayerPrefs.GetInt(PlayerPrefsLevelKey, 1);
-        if (CurrentLevelNumber <= 0) CurrentLevelNumber = 1;
-        if (_levels != null && CurrentLevelNumber > _levels.Count && _levels.Count > 0) {
-            CurrentLevelNumber = _levels.Count;
-        } else if (_levels == null || _levels.Count == 0) {
-            CurrentLevelNumber = 1;
+        CurrentLevelIndex = PlayerPrefs.GetInt(PlayerPrefsLevelKey, 0); 
+        if (_levels != null && _levels.Count > 0)
+        {
+            CurrentLevelIndex = Mathf.Clamp(CurrentLevelIndex, 0, _levels.Count - 1);
         }
+        else
+        {
+            CurrentLevelIndex = 0; // Default to 0 if no levels
+        }
+        Debug.Log($"Loaded progress. CurrentLevelIndex: {CurrentLevelIndex}");
     }
 
     public void SaveProgress()
     {
-        PlayerPrefs.SetInt(PlayerPrefsLevelKey, CurrentLevelNumber);
+        PlayerPrefs.SetInt(PlayerPrefsLevelKey, CurrentLevelIndex);
         PlayerPrefs.Save();
-    }
-
-    public int GetMaxLevelNumber()
-    {
-        return _levels?.Count ?? 0;
+        Debug.Log($"Saved progress. CurrentLevelIndex: {CurrentLevelIndex}");
     }
 }
