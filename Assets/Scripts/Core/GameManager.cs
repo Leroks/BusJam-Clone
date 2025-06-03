@@ -11,11 +11,12 @@ public class GameManager : MonoBehaviour
     public static TimerService Timer { get; private set; }
     public static LevelService Levels { get; private set; }
     
-    [SerializeField] private GameObject passengerPrefab; // Needed to pass to PassengerManager
+    [SerializeField] private GameObject passengerPrefab;
     [SerializeField] private GameObject busPrefab;
-    [SerializeField] private Transform[] queueSlotTransforms = new Transform[6]; // For queue visuals/positions
-    [SerializeField] private Transform[] passengerGridCellTransforms = new Transform[6]; // For passenger start grid, e.g., 2x3
-    [SerializeField] private Transform busStopTransform; // Assign in Inspector: where the active bus waits
+    [SerializeField] private GameObject passengerGridCellPrefab;
+    [SerializeField] private Transform passengerGridOrigin;
+    [SerializeField] private Transform[] queueSlotTransforms = new Transform[6];
+    [SerializeField] private Transform busStopTransform;
     
     private PassengerManager _passengerManager;
     private BusManager _busManager;
@@ -42,10 +43,9 @@ public class GameManager : MonoBehaviour
             // Initialize Managers
             // BusManager needs to be initialized before PassengerManager if PassengerManager needs a reference to it.
             _busManager = new BusManager(Pools, busPrefab, busStopTransform);
-            _passengerManager = new PassengerManager(Pools, passengerPrefab, queueSlotTransforms, passengerGridCellTransforms, _busManager, Input, StateMachine); 
+            // Updated PassengerManager instantiation
+            _passengerManager = new PassengerManager(Pools, passengerPrefab, passengerGridCellPrefab, passengerGridOrigin, queueSlotTransforms, _busManager, Input, StateMachine); 
             _busManager.OnAllBusesDeparted += CheckLevelWinCondition;
-            
-            // Input.OnPassengerTap is now handled by PassengerManager
 
             StateMachine.ChangeState(GameState.Menu);
             
