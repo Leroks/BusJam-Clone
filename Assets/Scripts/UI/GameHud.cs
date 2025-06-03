@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class GameHud : MonoBehaviour
 {
@@ -31,19 +32,28 @@ public class GameHud : MonoBehaviour
 
     private void HandleState(GameState state)
     {
-        if (timerBar != null) timerBar.gameObject.SetActive(false);
-        if (timerText != null) timerText.gameObject.SetActive(false);
-        if (levelText != null) levelText.gameObject.SetActive(false);
-        if (tapToStartText != null) tapToStartText.gameObject.SetActive(false);
-        if (winText != null) winText.gameObject.SetActive(false);
-        if (loseText != null) loseText.gameObject.SetActive(false);
+        tapToStartText.DOKill();
+        tapToStartText.transform.localScale = Vector3.one;
+        tapToStartText.gameObject.SetActive(false);
 
+        winText.DOKill();
+        winText.transform.localScale = Vector3.one;
+        winText.gameObject.SetActive(false);
+
+        loseText.DOKill();
+        loseText.transform.localScale = Vector3.one;
+        loseText.gameObject.SetActive(false);
+        
+        timerBar.gameObject.SetActive(false);
+        timerText.gameObject.SetActive(false);
+        levelText.gameObject.SetActive(false);
         gameObject.SetActive(true);
 
         switch (state)
         {
             case GameState.Menu:
                 tapToStartText.gameObject.SetActive(true);
+                tapToStartText.transform.DOScale(1.1f, 0.75f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo);
                 levelText.gameObject.SetActive(true);
                 levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
                 break;
@@ -57,11 +67,19 @@ public class GameHud : MonoBehaviour
                 break;
             case GameState.Complete:
                 winText.gameObject.SetActive(true);
+                winText.transform.localScale = Vector3.zero;
+                Sequence winSequence = DOTween.Sequence();
+                winSequence.Append(winText.transform.DOScale(1.2f, 0.3f).SetEase(Ease.OutBack));
+                winSequence.Append(winText.transform.DOScale(1.0f, 0.2f).SetEase(Ease.OutSine));
                 levelText.gameObject.SetActive(true);
                 levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
                 break;
             case GameState.Fail:
                 loseText.gameObject.SetActive(true);
+                loseText.transform.localScale = Vector3.zero;
+                Sequence loseSequence = DOTween.Sequence();
+                loseSequence.Append(loseText.transform.DOScale(1.2f, 0.3f).SetEase(Ease.OutBack));
+                loseSequence.Append(loseText.transform.DOScale(1.0f, 0.2f).SetEase(Ease.OutSine));
                 levelText.gameObject.SetActive(true);
                 levelText.text = $"LEVEL {GameManager.Levels.CurrentLevelIndex + 1}";
                 break;
@@ -70,6 +88,8 @@ public class GameHud : MonoBehaviour
 
     public void HideTapToStart()
     {
+        tapToStartText.DOKill();
+        tapToStartText.transform.localScale = Vector3.one;
         tapToStartText.gameObject.SetActive(false);
     }
 
@@ -88,13 +108,11 @@ public class GameHud : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (_timer != null)
-        {
-            _timer.OnTick -= UpdateUI;
-        }
-        if (GameManager.StateMachine != null)
-        {
-            GameManager.StateMachine.OnStateChanged -= HandleState;
-        }
+        _timer.OnTick -= UpdateUI;
+        GameManager.StateMachine.OnStateChanged -= HandleState;
+        
+        tapToStartText.DOKill();
+        winText.DOKill();
+        loseText.DOKill();
     }
 }
