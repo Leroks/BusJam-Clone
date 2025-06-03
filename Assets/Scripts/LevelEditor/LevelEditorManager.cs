@@ -1,8 +1,8 @@
 using UnityEngine;
-using UnityEngine.UI; // Still needed for Image, Button, GridLayoutGroup etc.
+using UnityEngine.UI;
 using System.Collections.Generic;
 using System.IO;
-using TMPro; // Added for TextMeshPro components
+using TMPro;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,42 +11,39 @@ using UnityEditor;
 public class LevelEditorManager : MonoBehaviour
 {
     [Header("Level Selection UI")]
-    public TMP_Dropdown levelListDropdown; // Changed to TMP_Dropdown
+    public TMP_Dropdown levelListDropdown;
     public Button createNewLevelButton;
-    public Button renameLevelButton; // Functionality not yet implemented
-    public Button globalValidationButton; // Functionality not yet implemented
 
     [Header("Level Properties UI")]
-    public TMP_InputField levelNameInputField; // Changed to TMP_InputField (Displays ScriptableObject name, read-only for now)
-    public TMP_InputField gridWidthInputField; // Changed to TMP_InputField
-    public TMP_InputField gridHeightInputField; // Changed to TMP_InputField
-    public TMP_InputField timerDurationInputField; // Changed to TMP_InputField
+    public TMP_InputField levelNameInputField;
+    public TMP_InputField gridWidthInputField;
+    public TMP_InputField gridHeightInputField;
+    public TMP_InputField timerDurationInputField;
 
     [Header("Bus Spawn Queue UI")]
     public GameObject busSpawnQueueContainer; 
     public Button addBusToQueueButton;
-    public GameObject busQueueItemPrefab; // Prefab: Button with Image and optional TMP_Text
+    public GameObject busQueueItemPrefab;
 
     [Header("Grid UI")]
     public GameObject gridContainer;
-    public GameObject gridCellPrefab; // Prefab: Button with Image
+    public GameObject gridCellPrefab;
 
     [Header("Palette UI")]
     public GameObject paletteContainer;
-    public GameObject paletteItemPrefab; // Prefab: Button with Image and TMP_Text
+    public GameObject paletteItemPrefab;
 
     [Header("Action Buttons UI")]
     public Button saveLevelButton;
-    public Button testLevelButton; // Functionality not yet implemented
     public Button clearGridButton;
 
-    // --- Data ---
+    // Data
     private List<LevelData> allLevels; 
     private LevelData currentSelectedLevel;
     private int currentEditingGridWidth = 4;
     private int currentEditingGridHeight = 4;
 
-    public class EditorGridCell
+    private class EditorGridCell
     {
         public int x, y;
         public PassengerColor passengerColor;
@@ -55,10 +52,10 @@ public class LevelEditorManager : MonoBehaviour
     }
     private List<EditorGridCell> editorGridCells = new List<EditorGridCell>();
 
-    private PassengerColor selectedPaletteColor = PassengerColor.Red; // Default to Red
+    private PassengerColor selectedPaletteColor = PassengerColor.Red; // Default
 
 
-    void Start()
+    private void Start()
     {
         LoadAllLevels();
         PopulateLevelListDropdown();
@@ -66,12 +63,11 @@ public class LevelEditorManager : MonoBehaviour
         InitializePalette();
         if (allLevels.Count == 0)
         {
-            if (createNewLevelButton != null && createNewLevelButton.gameObject.activeInHierarchy) // Check if button is usable
+            if (createNewLevelButton != null && createNewLevelButton.gameObject.activeInHierarchy)
             {
                 CreateNewLevel(); 
             } else {
-                Debug.LogWarning("No levels found and CreateNewLevel button is not available. Please create a level manually or ensure the button is set up.");
-                // Handle UI state for no levels (e.g. disable most controls)
+                Debug.LogWarning("error");
             }
         }
         else
@@ -80,17 +76,15 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    void LoadAllLevels()
+    private void LoadAllLevels()
     {
         allLevels = new List<LevelData>();
         LevelData[] loadedLevels = Resources.LoadAll<LevelData>("Levels");
         allLevels.AddRange(loadedLevels);
-        // Sort levels by name or ID if desired
-        // allLevels.Sort((a, b) => a.name.CompareTo(b.name)); 
         Debug.Log($"Loaded {allLevels.Count} levels.");
     }
 
-    void PopulateLevelListDropdown()
+    private void PopulateLevelListDropdown()
     {
         if (levelListDropdown == null) return;
         levelListDropdown.ClearOptions();
@@ -103,14 +97,13 @@ public class LevelEditorManager : MonoBehaviour
         
         levelListDropdown.onValueChanged.RemoveAllListeners(); 
         levelListDropdown.onValueChanged.AddListener(OnLevelSelected);
-
-        // Refresh visual for current selection if list was repopulated
+        
         if (currentSelectedLevel != null) {
             int currentIndex = allLevels.FindIndex(l => l == currentSelectedLevel);
             if (currentIndex != -1) {
                 levelListDropdown.SetValueWithoutNotify(currentIndex);
             } else if (allLevels.Count > 0) {
-                 levelListDropdown.SetValueWithoutNotify(0); // Default to first if current is no longer in list
+                 levelListDropdown.SetValueWithoutNotify(0);
                  OnLevelSelected(0);
             }
         } else if (allLevels.Count > 0) {
@@ -119,12 +112,12 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    void OnLevelSelected(int index)
+    private void OnLevelSelected(int index)
     {
         if (allLevels == null || allLevels.Count == 0) {
              currentSelectedLevel = null;
         } else if (index < 0 || index >= allLevels.Count) {
-            currentSelectedLevel = allLevels[0]; // Default to first if out of bounds
+            currentSelectedLevel = allLevels[0];
             if(levelListDropdown != null) levelListDropdown.SetValueWithoutNotify(0);
         } else {
             currentSelectedLevel = allLevels[index];
@@ -132,7 +125,7 @@ public class LevelEditorManager : MonoBehaviour
         DisplayLevelData();
     }
 
-    void DisplayLevelData()
+    private void DisplayLevelData()
     {
         if (currentSelectedLevel == null)
         {
@@ -140,7 +133,6 @@ public class LevelEditorManager : MonoBehaviour
             if (timerDurationInputField != null) timerDurationInputField.text = "";
             if (gridWidthInputField != null) gridWidthInputField.text = currentEditingGridWidth.ToString();
             if (gridHeightInputField != null) gridHeightInputField.text = currentEditingGridHeight.ToString();
-            // Disable most input fields if no level is loaded
             SetUIInteractable(false); 
             RebuildEditorGrid(); 
             UpdateBusSpawnQueueUI();
@@ -150,7 +142,7 @@ public class LevelEditorManager : MonoBehaviour
 
         if (levelNameInputField != null) {
             levelNameInputField.text = currentSelectedLevel.name;
-            levelNameInputField.interactable = false; // Name is usually managed by asset renaming
+            levelNameInputField.interactable = false;
         }
         if (timerDurationInputField != null) timerDurationInputField.text = currentSelectedLevel.timerDuration.ToString();
         if (gridWidthInputField != null) gridWidthInputField.text = currentSelectedLevel.gridWidth.ToString();
@@ -163,7 +155,7 @@ public class LevelEditorManager : MonoBehaviour
         UpdateBusSpawnQueueUI();
     }
 
-    void SetUIInteractable(bool isInteractable)
+    private void SetUIInteractable(bool isInteractable)
     {
         if (timerDurationInputField != null) timerDurationInputField.interactable = isInteractable;
         if (gridWidthInputField != null) gridWidthInputField.interactable = isInteractable;
@@ -171,10 +163,9 @@ public class LevelEditorManager : MonoBehaviour
         if (saveLevelButton != null) saveLevelButton.interactable = isInteractable;
         if (clearGridButton != null) clearGridButton.interactable = isInteractable;
         if (addBusToQueueButton != null) addBusToQueueButton.interactable = isInteractable;
-        // Palette and grid cells might also need their interactability managed
     }
     
-    void RebuildEditorGrid()
+    private void RebuildEditorGrid()
     {
         if (gridContainer == null || gridCellPrefab == null) return;
 
@@ -218,9 +209,9 @@ public class LevelEditorManager : MonoBehaviour
                     {
                         cell.passengerColor = currentSelectedLevel.standardGridPassengers[index];
                     }
-                    else cell.passengerColor = PassengerColor.Red; // Default to Red
+                    else cell.passengerColor = PassengerColor.Red;
                 }
-                else cell.passengerColor = PassengerColor.Red; // Default to Red
+                else cell.passengerColor = PassengerColor.Red;
                 
                 UpdateCellVisual(cell);
                 editorGridCells.Add(cell);
@@ -228,9 +219,9 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    void OnGridCellClicked(int x, int y)
+    private void OnGridCellClicked(int x, int y)
     {
-        if (currentSelectedLevel == null) return; // Don't allow editing if no level loaded
+        if (currentSelectedLevel == null) return;
 
         EditorGridCell clickedCell = editorGridCells.Find(cell => cell.x == x && cell.y == y);
         if (clickedCell != null)
@@ -240,7 +231,7 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    void UpdateCellVisual(EditorGridCell cell)
+    private void UpdateCellVisual(EditorGridCell cell)
     {
         if (cell.uiImage != null)
         {
@@ -248,21 +239,19 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    void InitializePalette()
+    private void InitializePalette()
     {
         if (paletteContainer == null || paletteItemPrefab == null) return;
         foreach (Transform child in paletteContainer.transform) Destroy(child.gameObject);
-
-        // Create buttons for all defined passenger colors
+        
         foreach (PassengerColor color in System.Enum.GetValues(typeof(PassengerColor)))
         {
             CreatePaletteButtonTMP(color);
         }
-        // Set initial selected palette color (e.g. Red)
         SelectPaletteColor(PassengerColor.Red);
     }
 
-    void CreatePaletteButtonTMP(PassengerColor color)
+    private void CreatePaletteButtonTMP(PassengerColor color)
     {
         GameObject paletteButtonGO = Instantiate(paletteItemPrefab, paletteContainer.transform);
         Image buttonImage = paletteButtonGO.GetComponent<Image>();
@@ -275,10 +264,9 @@ public class LevelEditorManager : MonoBehaviour
         if (buttonText != null) buttonText.text = color.ToString();
     }
 
-    void SelectPaletteColor(PassengerColor color)
+    private void SelectPaletteColor(PassengerColor color)
     {
         selectedPaletteColor = color;
-        // Optionally highlight selected palette button
     }
     
     Color GetUnityColorForPassenger(PassengerColor pc)
@@ -289,15 +277,14 @@ public class LevelEditorManager : MonoBehaviour
             case PassengerColor.Green: return Color.green;
             case PassengerColor.Blue: return Color.blue;
             case PassengerColor.Yellow: return Color.yellow;
-            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f); // Magenta-like
+            case PassengerColor.Purple: return new Color(0.5f, 0f, 0.5f);
             case PassengerColor.Orange: return new Color(1f, 0.5f, 0f);
             case PassengerColor.Black: return Color.black;
-            // Removed PassengerColor.None case
-            default: return Color.grey; // Fallback for unmapped colors
+            default: return Color.grey;
         }
     }
 
-    void UpdateBusSpawnQueueUI()
+    private void UpdateBusSpawnQueueUI()
     {
         if (busSpawnQueueContainer == null || busQueueItemPrefab == null) return;
         foreach (Transform child in busSpawnQueueContainer.transform) Destroy(child.gameObject);
@@ -311,22 +298,37 @@ public class LevelEditorManager : MonoBehaviour
             Image itemImage = itemGO.GetComponent<Image>();
             if(itemImage != null) itemImage.color = GetUnityColorForPassenger(busData.color);
             
-            // TMP_Text itemText = itemGO.GetComponentInChildren<TMP_Text>();
-            // if(itemText != null) itemText.text = busData.color.ToString();
-            // Add button to remove or change color later
+            Button itemButton = itemGO.GetComponent<Button>();
+            if (itemButton != null)
+            {
+                int busIndex = i;
+                itemButton.onClick.AddListener(() => OnBusQueueItemClicked(busIndex, itemImage));
+            }
         }
     }
 
-    void AddBusToQueue()
+    private void OnBusQueueItemClicked(int busIndex, Image busItemImage)
+    {
+        if (currentSelectedLevel == null || busIndex < 0 || busIndex >= currentSelectedLevel.busConfigurations.Count)
+        {
+            Debug.LogError("Invalid bus item clicked or no level selected.");
+            return;
+        }
+        
+        currentSelectedLevel.busConfigurations[busIndex].color = selectedPaletteColor;
+        
+        if (busItemImage != null)
+        {
+            busItemImage.color = GetUnityColorForPassenger(selectedPaletteColor);
+        }
+    }
+
+    private void AddBusToQueue()
     {
         if (currentSelectedLevel == null) return;
-        // Default to the first color in the enum (which should be Red now)
-        // or a specific default like PassengerColor.Red
-        PassengerColor newBusColor = PassengerColor.Red; 
+        PassengerColor newBusColor = PassengerColor.Red; // Default red
         if (System.Enum.GetValues(typeof(PassengerColor)).Length > 0)
         {
-            // Ensure there's at least one color defined.
-            // If PassengerColor.Red is not guaranteed to be first, explicitly set it.
             bool foundRed = false;
             foreach(PassengerColor c in System.Enum.GetValues(typeof(PassengerColor))) {
                 if (c == PassengerColor.Red) {
@@ -335,18 +337,18 @@ public class LevelEditorManager : MonoBehaviour
                     break;
                 }
             }
-            if (!foundRed) { // If Red is not in enum (should not happen), pick first available
+            if (!foundRed) {
                  newBusColor = (PassengerColor)System.Enum.GetValues(typeof(PassengerColor)).GetValue(0);
             }
         } else {
-            Debug.LogError("No PassengerColors defined in enum!");
-            return; // Cannot add a bus without a color
+            Debug.LogError("No PassengerColors");
+            return;
         }
         currentSelectedLevel.busConfigurations.Add(new BusData(newBusColor));
         UpdateBusSpawnQueueUI();
     }
     
-    void SetupButtonListeners()
+    private void SetupButtonListeners()
     {
         if (createNewLevelButton != null) createNewLevelButton.onClick.AddListener(CreateNewLevel);
         if (saveLevelButton != null) saveLevelButton.onClick.AddListener(SaveCurrentLevel);
@@ -356,22 +358,22 @@ public class LevelEditorManager : MonoBehaviour
         if (clearGridButton != null) clearGridButton.onClick.AddListener(ClearGrid);
     }
 
-    void OnGridDimensionChanged(string val) 
+    private void OnGridDimensionChanged(string val) 
     {
         RebuildEditorGrid();
     }
 
-    void ClearGrid()
+    private void ClearGrid()
     {
         if (currentSelectedLevel == null) return;
         foreach(var cell in editorGridCells)
         {
-            cell.passengerColor = PassengerColor.Red; // Default to Red
+            cell.passengerColor = PassengerColor.Red;
             UpdateCellVisual(cell);
         }
     }
 
-    public void SaveCurrentLevel()
+    private void SaveCurrentLevel()
     {
         if (currentSelectedLevel == null)
         {
@@ -391,7 +393,7 @@ public class LevelEditorManager : MonoBehaviour
         int totalCells = currentSelectedLevel.gridWidth * currentSelectedLevel.gridHeight;
         for (int i = 0; i < totalCells; i++)
         {
-            currentSelectedLevel.standardGridPassengers.Add(PassengerColor.Red); // Initialize with Red
+            currentSelectedLevel.standardGridPassengers.Add(PassengerColor.Red);
         }
 
         foreach (var cell in editorGridCells)
@@ -407,12 +409,10 @@ public class LevelEditorManager : MonoBehaviour
         EditorUtility.SetDirty(currentSelectedLevel);
         AssetDatabase.SaveAssets();
         Debug.Log($"Level {currentSelectedLevel.name} saved with Grid: {currentSelectedLevel.gridWidth}x{currentSelectedLevel.gridHeight}.");
-#else
-        Debug.LogWarning("Saving ScriptableObjects at runtime is complex. This feature is primarily for editor use.");
 #endif
     }
 
-    public void CreateNewLevel()
+    private void CreateNewLevel()
     {
 #if UNITY_EDITOR
         LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
@@ -429,13 +429,9 @@ public class LevelEditorManager : MonoBehaviour
         }
         newLevel.name = $"Level_{newLevelId}"; 
         newLevel.levelId = newLevelId; 
-        // Defaults are set in LevelData class definition
-        // newLevel.timerDuration = 30f; 
-        // newLevel.gridWidth = 4; 
-        // newLevel.gridHeight = 4; // Defaults are set in LevelData
         newLevel.standardGridPassengers = new List<PassengerColor>();
         for(int i = 0; i < newLevel.gridWidth * newLevel.gridHeight; i++) {
-            newLevel.standardGridPassengers.Add(PassengerColor.Red); // Default new level cells to Red
+            newLevel.standardGridPassengers.Add(PassengerColor.Red);
         }
         newLevel.busConfigurations = new List<BusData>();
 
@@ -445,18 +441,13 @@ public class LevelEditorManager : MonoBehaviour
         AssetDatabase.Refresh(); 
 
         allLevels.Add(newLevel);
-        // Sort again if you want new levels to appear in a sorted order immediately
-        // allLevels.Sort((a, b) => a.name.CompareTo(b.name));
         PopulateLevelListDropdown(); 
         
         int newIndex = allLevels.FindIndex(l => l == newLevel);
         if (newIndex != -1) {
             levelListDropdown.value = newIndex; 
-            // OnLevelSelected will be called by dropdown's onValueChanged
         }
         Debug.Log($"Created new level: {assetPath}");
-#else
-        Debug.LogError("Creating ScriptableObjects at runtime is not supported this way.");
 #endif
     }
 }

@@ -61,7 +61,7 @@ namespace MK.Toon.Editor.InstallWizard
 
         private static void LogAssetNotFoundError()
         {
-            Debug.LogError("Could not find Install Wizard Configuration Asset, please try to import the package again.");
+            //Debug.LogError("Could not find Install Wizard Configuration Asset, please try to import the package again.");
         }
 
         private static Configuration _instance = null;
